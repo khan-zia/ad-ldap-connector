@@ -61,10 +61,11 @@ export const createCryptoKeypair = (): Promise<void> =>
  * - Linux: Not implemented yet but it should use Secret Service API/libsecret.
  */
 const storePrivateKey = (key: string): void => {
-  const storageScript = path.join(__dirname, 'src/scripts/storePrivateKey.ps1');
+  const storageScript = path.join(__dirname, '../../scripts/storePrivateKey.ps1');
+  const encodedPrivateKey = Buffer.from(key).toString("base64");
 
   // Execute the script.
-  const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', storageScript, key]);
+  const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', storageScript, encodedPrivateKey]);
 
   // Cath errors if any.
   ps.on('error', (error) => {
@@ -75,9 +76,7 @@ const storePrivateKey = (key: string): void => {
   });
 
   ps.stdout.on('data', (data) => {
-    // Assume the script ran successfully.
-    console.log('Powershell process ran fine.');
-    console.log({ data });
+    console.log({ data: data.toString() });
   });
 
   ps.on('exit', (code) => {
