@@ -65,7 +65,10 @@ const storePrivateKey = (key: string): void => {
   const encodedPrivateKey = Buffer.from(key).toString("base64");
 
   // Execute the script.
-  const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', storageScript, encodedPrivateKey]);
+  const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', storageScript, encodedPrivateKey], {
+    // runas: 'Administrator',
+    // windowsHide: true
+  });
 
   // Cath errors if any.
   ps.on('error', (error) => {

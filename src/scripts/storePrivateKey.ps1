@@ -3,27 +3,40 @@ param (
     [string]$EncodedPrivateKey
 )
 
-# Key that will reference the private key later on.
-$Target = "MevetoADLDAPConnectorPrivateKey"
-
+# Convert the key from base64 encoding to normal string.
 $PrivateKey = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($EncodedPrivateKey))
 
+# Ensure the key could successfully be decoded and it was specified.
 if ([string]::IsNullOrEmpty($PrivateKey)) {
     Write-Error "The private key cannot be null or empty."
     return
 }
 
+# Location of the key storage.
+$fileDirectory = "C:\Program Files\Meveto"
+
+If (!(Test-Path $fileDirectory)) {
+    # Create the "Meveto" folder first if it doesn't exist.
+    New-Item -ItemType Directory -Path $fileDirectory | Out-Null
+}
+
+# File name that will store the encyrpted version of the private key.
+$Target = Join-Path -Path $fileDirectory -ChildPath "MevetoADLDAPEncryptedPrivateKey.enc"
+
 # Make sure required modules are available. If not, install and load them.
 & "$PSScriptRoot\loadDeps.ps1"
 
-# Convert the string of private key in to a secure string.
-# Then, convert the secure string to a byte array.
-$SecureStringPrivateKey = ConvertTo-SecureString -String $PrivateKey -AsPlainText -Force
-$PrivateKeyByteArray = [System.Runtime.InteropServices.Marshal]::SecureStringToCoTaskMemUnicode($SecureStringPrivateKey)
-Write-Output $SecureStringPrivateKey
-# Encrypt the private key's byte array content.
-$SecurityAssembly = Add-Type -AssemblyName System.Security
-# $EncryptedPrivateKey = [System.Security.Cryptography.ProtectedData]::Protect($PrivateKeyByteArray, $null, [System.Security.Cryptography.DataProtectionScope]::LocalMachine)
+# Convert key's string to byte array.
+$PrivateKeyByteArray = [System.Text.Encoding]::UTF8.GetBytes($PrivateKey)
 
-# Store the private key in the Windows Credentials Manager.
-# Add-StoredCredential -Target $Target -Password $EncryptedPrivateKey
+# Encrypt the private key
+Add-Type -AssemblyName System.Security
+$EncryptedPrivateKeyBytes = [System.Security.Cryptography.ProtectedData]::Protect($PrivateKeyByteArray, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)
+
+# Store the encrypted private key at the specified location.
+Set-Content -Path $Target -Value $EncryptedPrivateKeyBytes -Encoding Byte
+
+# $CipherText = Get-Content -Path $Target -Encoding Byte
+# $PlainText = [Security.Cryptography.ProtectedData]::Unprotect($CipherText, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
+# $PlainTextString = [System.Text.Encoding]::UTF8.GetString($PlainText)
+# Write-Output $PlainTextString
