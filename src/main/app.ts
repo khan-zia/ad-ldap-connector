@@ -1,9 +1,10 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
+import nconf from 'nconf'
+import path from 'path';
 import router from './routes';
 
-const PORT = 6970;
 const app = express();
 
 // Create an HTTP server.
@@ -13,6 +14,9 @@ app.use(express.json());
 app.use(cors());
 app.use(router);
 
-httpServer.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
+// Initialize config.
+nconf.env({lowerCase: true}).file(path.join(__dirname, './config/default.json'));
+
+httpServer.listen(nconf.get('port'), () => {
+  console.log(`Server is running at http://localhost:${nconf.get('port')}`);
 });

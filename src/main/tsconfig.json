@@ -1,8 +1,7 @@
 {
   "extends": "../../tsconfig",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "node"
+    "module": "CommonJS"
   },
   "exclude": ["node_modules"]
 }

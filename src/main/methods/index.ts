@@ -1,7 +1,32 @@
 import crypto from 'crypto';
 import { spawn } from 'child_process';
-import { isElevated } from '../utils';
 import path from 'path';
+import nconf from 'nconf'
+import { isElevated } from '../utils';
+
+/**
+ * Generates and returns an ID to be used as an identifier for this connector
+ * instance. ID is of the following format.
+ * 123456-12345-12345
+ */
+const generateID = (): string => {
+  let str = '';
+  for (let i = 0; i <= 4; i++) {
+    str += (i === 1 || i === 3) ? '-' : Math.floor(Math.random() * 90000) + 10000;
+  }
+  return str;
+}
+
+/**
+ * Generates and stores a new ID for the app.
+ * The ID will be stored insdie the default.json config file.
+ */
+export const createNewID = (): void => {
+  nconf.set('appID', generateID());
+  nconf.save((err: Error | null) => {
+    console.log(err)
+  });
+}
 
 /**
  * Attempts to create a new crypto key pair on the device.
