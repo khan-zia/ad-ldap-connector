@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { spawn } from 'child_process';
 import path from 'path';
-import nconf from 'nconf'
+import nconf from 'nconf';
 import { isElevated } from '../utils';
 
 /**
@@ -21,12 +21,7 @@ const generateID = (): string => {
  * Generates and stores a new ID for the app.
  * The ID will be stored insdie the default.json config file.
  */
-export const createNewID = (): void => {
-  nconf.set('appID', generateID());
-  nconf.save((err: Error | null) => {
-    console.log(err)
-  });
-}
+export const createNewID = (): void => nconf.set('appID', generateID());
 
 /**
  * Attempts to create a new crypto key pair on the device.
@@ -58,9 +53,10 @@ export const createCryptoKeypair = (): Promise<void> =>
 
           try {
             // Attempt to securely store the private key.
-            console.log('Here is the private key that was generated before storage.');
-            console.log(privateKey);
             storePrivateKey(privateKey);
+
+            // Store the public key in config
+            nconf.set('publicKey', publicKey);
 
             // Resolve the promise
             resolve();
