@@ -12,10 +12,10 @@ import { isElevated } from '../utils';
 const generateID = (): string => {
   let str = '';
   for (let i = 0; i <= 4; i++) {
-    str += (i === 1 || i === 3) ? '-' : Math.floor(Math.random() * 90000) + 10000;
+    str += i === 1 || i === 3 ? '-' : Math.floor(Math.random() * 90000) + 10000;
   }
   return str;
-}
+};
 
 /**
  * Generates and stores a new ID for the app.
@@ -83,7 +83,7 @@ export const createCryptoKeypair = (): Promise<void> =>
  */
 const storePrivateKey = (key: string): void => {
   const storageScript = path.join(__dirname, '../../scripts/storePrivateKey.ps1');
-  const encodedPrivateKey = Buffer.from(key).toString("base64");
+  const encodedPrivateKey = Buffer.from(key).toString('base64');
 
   // Execute the script.
   const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', storageScript, encodedPrivateKey], {

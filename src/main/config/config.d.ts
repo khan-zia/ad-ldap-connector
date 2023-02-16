@@ -1,5 +1,6 @@
 export interface Config {
-    port: string;
-    appID: null | string;
-    publicKey: null | string;
+  state: 'pendingConfig' | 'pendingCredentials' | 'ready';
+  port: string;
+  appID: null | string;
+  publicKey: null | string;
 }

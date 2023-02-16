@@ -1,5 +1,6 @@
 import express, { RequestHandler, Response } from 'express';
 import nconf from 'nconf';
+import { Config } from '../config/config';
 import { createCryptoKeypair, createNewID } from '../methods';
 import { isElevated } from '../utils';
 
@@ -14,7 +15,10 @@ const router = express.Router();
 const configure: RequestHandler = async (_, res: Response<Record<string, unknown>>) => {
   // Only admin users with elevated processes can run config.
   if (!isElevated()) {
-    return res.json({success: false, message: 'Only Administrator users can configure the Meveto AD/LDAP Connector.'})
+    return res.json({
+      success: false,
+      message: 'Only Administrator users can configure the Meveto AD/LDAP Connector.',
+    });
   }
 
   try {
@@ -28,16 +32,23 @@ const configure: RequestHandler = async (_, res: Response<Record<string, unknown
     // config.json file.
     nconf.save((err: Error | null) => {
       if (err) {
-        return res.json({ success: false, message: "There was a problem while trying to save configuration values." });
+        return res.json({ success: false, message: 'There was a problem while trying to save configuration values.' });
       }
     });
 
     // Return success response along with the app's ID and public key.
-    return res.json({success: true, id: nconf.get('appID'), publicKey: nconf.get('publicKey')});
-  } catch(error) {
+    return res.json({ success: true, id: nconf.get('appID'), publicKey: nconf.get('publicKey') });
+  } catch (error) {
     return res.json({ success: false, message: (error as Error).message });
   }
 };
+
+router.get('/state', (_, res: Response<Record<string, unknown>>) => {
+  // Return current state of the connector.
+  const state: Config['state'] = nconf.get('state');
+
+  res.json({ success: true, state });
+});
 
 router.post('/configure', configure);
 
