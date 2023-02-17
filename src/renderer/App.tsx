@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import BeginConfig from './pages/BeginConfig';
+import GetCredentials from './pages/GetCredentials';
 import Launch from './pages/Launch';
 
 const App = (): JSX.Element => {
@@ -9,6 +10,7 @@ const App = (): JSX.Element => {
       <Routes>
         <Route path='/' element={<Launch />} />
         <Route path='/configure' element={<BeginConfig />} />
+        <Route path='/get-credentials' element={<GetCredentials />} />
         <Route
           path='*'
           element={

@@ -21,12 +21,23 @@ const configure: RequestHandler = async (_, res: Response<Record<string, unknown
     });
   }
 
+  // App must not be already configurted.
+  if (nconf.get('state') !== 'pendingConfig') {
+    return res.json({
+      success: false,
+      message: 'The Connector appears to be configured already. Please contact Meveto if you are facing any issues.',
+    });
+  }
+
   try {
     // Create a new ID for the app.
     createNewID();
 
     // Create crypto keypair. This encryptes and saves the private key using PowerShell.
     await createCryptoKeypair();
+
+    // Update app's state.
+    nconf.set('state', 'pendingCredentials');
 
     // Finally, save configuration values. This will save appID and publicKey in the
     // config.json file.
@@ -37,7 +48,12 @@ const configure: RequestHandler = async (_, res: Response<Record<string, unknown
     });
 
     // Return success response along with the app's ID and public key.
-    return res.json({ success: true, id: nconf.get('appID'), publicKey: nconf.get('publicKey') });
+    return res.json({
+      success: true,
+      id: nconf.get('appID'),
+      publicKey: nconf.get('publicKey'),
+      state: nconf.get('state'),
+    });
   } catch (error) {
     return res.json({ success: false, message: (error as Error).message });
   }
@@ -48,6 +64,16 @@ router.get('/state', (_, res: Response<Record<string, unknown>>) => {
   const state: Config['state'] = nconf.get('state');
 
   res.json({ success: true, state });
+});
+
+/**
+ * Retrieves the app's ID and public key if set.
+ */
+router.get('/info', (_, res: Response<Record<string, unknown>>) => {
+  const id: Config['appID'] = nconf.get('appID');
+  const publicKey: Config['publicKey'] = nconf.get('publicKey');
+
+  res.json({ success: true, id, publicKey });
 });
 
 router.post('/configure', configure);

@@ -1,6 +1,6 @@
 {
-  "state": "pendingConfig",
+  "state": "pendingCredentials",
   "port": "6970",
-  "appID": "28602-29821-67360",
-  "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAw/qnZbqYQas1O3n3ESG3gw9fYx4fR01622tdy5BgZjY=\n-----END PUBLIC KEY-----\n"
+  "appID": "86929-23990-62322",
+  "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAKhTNRpZbwq4x1cJJZ0LGrtwI1lXdgtpiZFzmEa3qWBw=\n-----END PUBLIC KEY-----\n"
 }

@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
 import CopyableText from '../components/CopyableText';
+import { Config } from '../../main/config/config';
 
 type BeginConfigResponse = {
   success: boolean;
   message?: string;
-  id?: string;
-  publicKey?: string;
+  id?: Config['appID'];
+  publicKey?: Config['publicKey'];
+  state?: Config['state'];
 };
 
 const flashError = (message?: null | string): void => {
@@ -20,6 +23,17 @@ const BeginConfig = (): JSX.Element => {
   const [configuring, setConfiguring] = useState<boolean>(false);
   const [id, setId] = useState<string | null>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  /**
+   * If the app's state exists in the local storage and indicates that the app is already
+   * configured, then redirect user to the main launch page.
+   */
+  useEffect(() => {
+    if (localStorage.getItem('state') && localStorage.getItem('state') !== 'pendingConfig') {
+      navigate('/');
+    }
+  }, []);
 
   const beginConfiguration = (): void => {
     setConfiguring(true);
@@ -34,11 +48,20 @@ const BeginConfig = (): JSX.Element => {
           return;
         }
 
-        if (data.id && data.publicKey) {
+        if (data.id && data.publicKey && data.state) {
+          const sanitizedKey = data.publicKey
+            .replace('-----BEGIN PUBLIC KEY-----', '')
+            .replace('-----END PUBLIC KEY-----', '')
+            .replaceAll('\n', '');
           setId(data.id);
-          setPublicKey(
-            data.publicKey.replace('-----BEGIN PUBLIC KEY-----', '').replace('-----END PUBLIC KEY-----', '')
-          );
+          setPublicKey(sanitizedKey);
+
+          // Store both values in the local storage.
+          localStorage.setItem('id', data.id);
+          localStorage.setItem('publicKey', sanitizedKey);
+
+          // Update the state of the app in the local storage.
+          localStorage.setItem('state', data.state);
         }
       })
       .catch((error) => {
@@ -70,6 +93,11 @@ const BeginConfig = (): JSX.Element => {
           <div className='mt-6'>
             <CopyableText title='Public Key' text={publicKey} />
           </div>
+          <div className='mt-10 flex justify-end'>
+            <Button variant='contained' size='large' onClick={() => navigate('/get-credentials')}>
+              Next
+            </Button>
+          </div>
         </>
       ) : (
         <>
@@ -80,7 +108,7 @@ const BeginConfig = (): JSX.Element => {
             this connector to your Meveto organization using the organization admin dashboard.
           </div>
           <div className='mt-8'>
-            <Button variant='contained' onClick={beginConfiguration} disabled={configuring}>
+            <Button variant='contained' size='large' onClick={beginConfiguration} disabled={configuring}>
               {configuring ? 'Configuring...' : 'Begin Configuration'}
             </Button>
           </div>
