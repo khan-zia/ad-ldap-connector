@@ -53,6 +53,31 @@ Set-Content -Path $Target -Value $EncryptedPrivateKeyBytes -Encoding Byte
 # Store the encrypted AES key at the specified location.
 Set-Content -Path $AESTarget -Value $EncryptedAESKeyBytes -Encoding Byte
 
+# Make the files hidden and read only by default.
+$PKey = Get-Item $Target -Force
+$AES = Get-Item $AESTarget -Force
+
+$PKey.Attributes = $PKey.Attributes -bor [System.IO.FileAttributes]::Hidden
+$PKey.Attributes = $PKey.Attributes -bor [System.IO.FileAttributes]::ReadOnly
+$AES.Attributes = $AES.Attributes -bor [System.IO.FileAttributes]::Hidden
+$AES.Attributes = $AES.Attributes -bor [System.IO.FileAttributes]::ReadOnly
+
+# Disable permission inheritance for the files. Remove all existing permissions and then assign only the current user to
+# have "Read" permission.
+$PKeyACL = Get-Acl $Target
+$AESACL = Get-Acl $AESTarget
+
+$PKeyACL.SetAccessRuleProtection($True, $False)
+$AESACL.SetAccessRuleProtection($True, $False)
+$PKeyACL.SetOwner([System.Security.Principal.NTAccount] $env:USERNAME)
+$AESACL.SetOwner([System.Security.Principal.NTAccount] $env:USERNAME)
+$ReadRule = New-Object System.Security.AccessControl.FileSystemAccessRule($env:USERNAME, 'Read', 'Allow')
+$PKeyACL.AddAccessRule($ReadRule)
+$AESACL.AddAccessRule($ReadRule)
+
+Set-Acl $Target -AclObject $PKeyACL
+Set-Acl $AESTarget -AclObject $AESACL
+
 # $CipherText = Get-Content -Path $Target -Encoding Byte
 # $PlainText = [Security.Cryptography.ProtectedData]::Unprotect($CipherText, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
 # $PlainTextString = [System.Text.Encoding]::UTF8.GetString($PlainText)
