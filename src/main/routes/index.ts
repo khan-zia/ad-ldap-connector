@@ -41,11 +41,11 @@ const configure: RequestHandler = async (_, res: Response<Record<string, unknown
 
     // Finally, save configuration values. This will save appID and publicKey in the
     // config.json file.
-    nconf.save((err: Error | null) => {
-      if (err) {
-        return res.json({ success: false, message: 'There was a problem while trying to save configuration values.' });
-      }
-    });
+    // nconf.save((err: Error | null) => {
+    //   if (err) {
+    //     return res.json({ success: false, message: 'There was a problem while trying to save configuration values.' });
+    //   }
+    // });
 
     // Return success response along with the app's ID and public key.
     return res.json({

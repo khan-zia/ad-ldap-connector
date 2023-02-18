@@ -53,7 +53,7 @@ export const createCryptoKeypair = (): Promise<void> =>
 
           try {
             // Attempt to securely store the private key.
-            storePrivateKey(privateKey);
+            storeKeys(privateKey);
 
             // Store the public key in config
             nconf.set('publicKey', publicKey);
@@ -75,21 +75,17 @@ export const createCryptoKeypair = (): Promise<void> =>
   });
 
 /**
- * Store private key. It will store the key securely.
- *
- * - Windows: Windows Credentials Manager.
- * - Mac: Not implemented yet but it should use KeyChain.
- * - Linux: Not implemented yet but it should use Secret Service API/libsecret.
+ * Stores the private key generated here on the node.js side and creates an AES key
+ * on the PowerShell side. The AES key is used for encrypting sensitive info such as
+ * AD user passwords. The private key here on the node.js side is used to authenticate
+ * to Meveto.
  */
-const storePrivateKey = (key: string): void => {
-  const storageScript = path.join(__dirname, '../../scripts/storePrivateKey.ps1');
+const storeKeys = (key: string): void => {
+  const storageScript = path.join(__dirname, '../../scripts/storeCryptoKeys.ps1');
   const encodedPrivateKey = Buffer.from(key).toString('base64');
 
   // Execute the script.
-  const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', storageScript, encodedPrivateKey], {
-    // runas: 'Administrator',
-    // windowsHide: true
-  });
+  const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', storageScript, encodedPrivateKey]);
 
   // Cath errors if any.
   ps.on('error', (error) => {
@@ -100,10 +96,15 @@ const storePrivateKey = (key: string): void => {
   });
 
   ps.stdout.on('data', (data) => {
-    console.log({ data: data.toString() });
+    // Butter output...
+    console.log(data)
+    console.log("COMPLETED")
   });
 
   ps.on('exit', (code) => {
-    console.log(`Powershell process exited with code ${code}`);
+    // Must exit with code 0 to be considered sucessful.
+    if (code !== 0) {
+      throw new Error(`The powershell process could not be completed successfully. It exited with code: ${code}`);
+    }
   });
 };

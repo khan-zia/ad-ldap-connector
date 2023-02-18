@@ -1,5 +1,5 @@
 # Find and load a given module with an optional minimum required version.
-Function Load-Module(
+Function Get-Module(
     [string] [Parameter(Mandatory = $true)] $name,
     [string] $minVersion
 ) {
@@ -49,9 +49,5 @@ Function Load-Module(
     }
 }
 
-Write-Verbose "Checking required modules."
-
 # Load the CredentialManager module
-Load-Module 'CredentialManager' '2.0'
-
-Write-Verbose "Required modules available."
+Get-Module 'CredentialManager' '2.0'
