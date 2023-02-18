@@ -33,7 +33,7 @@ const GetCredentials = (): JSX.Element => {
    * have already been collected, then redirect user to the main launch page.
    */
   useEffect(() => {
-    if (localStorage.getItem('state') && localStorage.getItem('state') !== 'pendingCredentials') {
+    if (!localStorage.getItem('state') || localStorage.getItem('state') !== 'pendingCredentials') {
       navigate('/');
     }
   }, []);

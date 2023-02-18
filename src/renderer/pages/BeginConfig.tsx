@@ -30,7 +30,7 @@ const BeginConfig = (): JSX.Element => {
    * configured, then redirect user to the main launch page.
    */
   useEffect(() => {
-    if (localStorage.getItem('state') && localStorage.getItem('state') !== 'pendingConfig') {
+    if (!localStorage.getItem('state') || localStorage.getItem('state') !== 'pendingConfig') {
       navigate('/');
     }
   }, []);

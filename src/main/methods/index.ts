@@ -45,7 +45,7 @@ export const createCryptoKeypair = (): Promise<void> =>
             format: 'pem',
           },
         },
-        (err, publicKey, privateKey) => {
+        async (err, publicKey, privateKey) => {
           if (err) {
             reject(new Error(`There was a problem while trying to generate a key pair: ${err.message}`));
             return;
@@ -53,7 +53,7 @@ export const createCryptoKeypair = (): Promise<void> =>
 
           try {
             // Attempt to securely store the private key.
-            storeKeys(privateKey);
+            await storeKeys(privateKey);
 
             // Store the public key in config
             nconf.set('publicKey', publicKey);
@@ -80,31 +80,33 @@ export const createCryptoKeypair = (): Promise<void> =>
  * AD user passwords. The private key here on the node.js side is used to authenticate
  * to Meveto.
  */
-const storeKeys = (key: string): void => {
-  const storageScript = path.join(__dirname, '../../scripts/storeCryptoKeys.ps1');
-  const encodedPrivateKey = Buffer.from(key).toString('base64');
+const storeKeys = (key: string): Promise<void> =>
+  new Promise((resolve, reject) => {
+    const storageScript = path.join(__dirname, '../../scripts/storeCryptoKeys.ps1');
+    const encodedPrivateKey = Buffer.from(key).toString('base64');
 
-  // Execute the script.
-  const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', storageScript, encodedPrivateKey]);
+    // Execute the script.
+    const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', storageScript, encodedPrivateKey]);
 
-  // Cath errors if any.
-  ps.on('error', (error) => {
-    throw new Error(`The powershell process could not be run: ${error.message}`);
-  });
-  ps.stderr.on('data', (error) => {
-    throw new Error(`The powershell process could not be completed successfully: ${error}`);
-  });
+    // Cath errors if any.
+    ps.on('error', (error) => {
+      reject(new Error(`The powershell process could not be run: ${error.message}`));
+    });
+    ps.stderr.on('data', (error) => {
+      console.log(error.toString());
+      reject(new Error(`The powershell process could not be completed successfully: ${error.toString()}`));
+    });
 
-  ps.stdout.on('data', (data) => {
-    // Butter output...
-    console.log(data)
-    console.log("COMPLETED")
-  });
+    ps.stdout.on('data', (data) => {
+      // Butter output...
+    });
 
-  ps.on('exit', (code) => {
-    // Must exit with code 0 to be considered sucessful.
-    if (code !== 0) {
-      throw new Error(`The powershell process could not be completed successfully. It exited with code: ${code}`);
-    }
+    ps.on('exit', (code) => {
+      // Must exit with code 0 to be considered sucessful.
+      if (code !== 0) {
+        reject(new Error(`The powershell process could not be completed successfully. It exited with code: ${code}`));
+      }
+
+      resolve();
+    });
   });
-};

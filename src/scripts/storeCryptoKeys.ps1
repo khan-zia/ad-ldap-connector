@@ -31,21 +31,21 @@ $AESTarget = Join-Path -Path $FileDirectory -ChildPath "SymmetricEncryptedPrivat
 
 # Load required .NET modules.
 Add-Type -AssemblyName System.Security
-Add-Type -AssemblyName System.Security.Cryptography
+# Add-Type System.Security.Cryptography
 
 # Convert key's string to byte array.
 $PrivateKeyByteArray = [System.Text.Encoding]::UTF8.GetBytes($PrivateKey)
 
 # Encrypt the private key
-$EncryptedPrivateKeyBytes = [ProtectedData]::Protect($PrivateKeyByteArray, $null, [DataProtectionScope]::CurrentUser)
+$EncryptedPrivateKeyBytes = [System.Security.Cryptography.ProtectedData]::Protect($PrivateKeyByteArray, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)
 
 # Generate a 256-bit AES key using a cryptographically secure random number generator.
 $AESKey = [byte[]]::new(32)
-$RandomNum = [RNGCryptoServiceProvider]::new()
+$RandomNum = [System.Security.Cryptography.RNGCryptoServiceProvider]::new()
 $RandomNum.GetBytes($AESKey)
 
 # Encrypt the AES key
-$EncryptedAESKeyBytes = [ProtectedData]::Protect($AESKey, $null, [DataProtectionScope]::CurrentUser)
+$EncryptedAESKeyBytes = [System.Security.Cryptography.ProtectedData]::Protect($AESKey, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)
 
 # Store the encrypted private key at the specified location.
 Set-Content -Path $Target -Value $EncryptedPrivateKeyBytes -Encoding Byte
