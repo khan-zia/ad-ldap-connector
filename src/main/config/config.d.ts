@@ -3,4 +3,9 @@ export interface Config {
   port: string;
   appID: null | string;
   publicKey: null | string;
+  orgID: null | string;
+  conString: null | string;
+  baseDN: null | string;
+  username: null | string;
+  password: null | string;
 }

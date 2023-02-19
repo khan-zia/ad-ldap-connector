@@ -1,5 +1,6 @@
 import process from 'node:process';
-import childProcess from 'node:child_process';
+import childProcess, { spawn } from 'node:child_process';
+import path from 'node:path';
 
 type ProcessElevated = boolean | undefined;
 
@@ -52,3 +53,50 @@ export const isElevated = (): ProcessElevated => {
     return false;
   }
 };
+
+/**
+ * Execute a specified powershell script. When the script successfully finishes execution, the method will resolve
+ * a Promise with void. If the script encounters any error, the method will reject the Promise with a new Error object
+ * containing the error message.
+ *
+ * @param name Name of the PowerShell script to execute. This must not include the path until the `/src/scripts/` folder.
+ * @param params An array of values. Each value will be passed as a parameter to the script.
+ * @param encode Whether to base64 encode values of the parameters or not. Defaults to false.
+ */
+export const executePSScript = (name: string, params?: string[], encode: boolean = false): Promise<void> =>
+  new Promise((resolve, reject) => {
+    // Find the script.
+    const PSScript = path.join(__dirname, `../../scripts/${name}`);
+
+    // Prepare params.
+    let passableParams: string[] = [];
+
+    if (params) {
+      passableParams = params.map((value) => (encode ? Buffer.from(value).toString('base64') : value));
+    }
+
+    // Execute the script.
+    const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', PSScript, ...passableParams]);
+
+    // Cath errors if any.
+    ps.on('error', (error) => {
+      reject(new Error(`The powershell process could not be run: ${error.message}`));
+    });
+    ps.stderr.on('data', (error) => {
+      // console.log(error.toString());
+      reject(new Error(`The powershell process could not be completed successfully: ${error.toString()}`));
+    });
+
+    ps.stdout.on('data', (data) => {
+      // Butter output...
+    });
+
+    ps.on('exit', (code) => {
+      // Must exit with code 0 to be considered sucessful.
+      if (code !== 0) {
+        reject(new Error(`The powershell process could not be completed successfully. It exited with code: ${code}`));
+      }
+
+      resolve();
+    });
+  });

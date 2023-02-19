@@ -2,7 +2,7 @@ import express, { Request, RequestHandler, Response } from 'express';
 import nconf from 'nconf';
 import { SaveCredsRequestBody } from '../../renderer/pages/GetCredentials';
 import { Config } from '../config/config';
-import { createCryptoKeypair, createNewID } from '../methods';
+import { createCryptoKeypair, createNewID } from '../handlers/ConfigHandler';
 import { isElevated } from '../utils';
 
 // Initialize the router.
@@ -67,9 +67,12 @@ const configure: RequestHandler = async (_, res: Response<Record<string, unknown
   }
 };
 
-const saveCredentials: RequestHandler = async (req: Request<{}, {}, SaveCredsRequestBody>, res: Response<Record<string, unknown>>) => {
+const saveCredentials: RequestHandler = async (
+  req: Request<{}, {}, SaveCredsRequestBody>,
+  res: Response<Record<string, unknown>>
+) => {
   try {
-    console.log(req.body);
+    // req.body
 
     return res.json({
       success: true,

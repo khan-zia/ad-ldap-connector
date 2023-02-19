@@ -31,47 +31,42 @@ export const createNewID = (): void => nconf.set('appID', generateID());
  */
 export const createCryptoKeypair = (): Promise<void> =>
   new Promise((resolve, reject) => {
-    // To create a key pair, the user must be an admin.
-    if (isElevated()) {
-      crypto.generateKeyPair(
-        'ed25519',
-        {
-          publicKeyEncoding: {
-            type: 'spki',
-            format: 'pem',
-          },
-          privateKeyEncoding: {
-            type: 'pkcs8',
-            format: 'pem',
-          },
+    crypto.generateKeyPair(
+      'ed25519',
+      {
+        publicKeyEncoding: {
+          type: 'spki',
+          format: 'pem',
         },
-        async (err, publicKey, privateKey) => {
-          if (err) {
-            reject(new Error(`There was a problem while trying to generate a key pair: ${err.message}`));
-            return;
-          }
-
-          try {
-            // Attempt to securely store the private key.
-            await storeKeys(privateKey);
-
-            // Store the public key in config
-            nconf.set('publicKey', publicKey);
-
-            // Resolve the promise
-            resolve();
-          } catch (error) {
-            reject(
-              new Error(
-                `There was a problem while trying to generate a key pair: ${(error as Error | TypeError).message}`
-              )
-            );
-          }
+        privateKeyEncoding: {
+          type: 'pkcs8',
+          format: 'pem',
+        },
+      },
+      async (err, publicKey, privateKey) => {
+        if (err) {
+          reject(new Error(`There was a problem while trying to generate a key pair: ${err.message}`));
+          return;
         }
-      );
-    } else {
-      reject(new Error('Only an admin user can configure the AD/LDAP Connector.'));
-    }
+
+        try {
+          // Attempt to securely store the private key.
+          await storeKeys(privateKey);
+
+          // Store the public key in config
+          nconf.set('publicKey', publicKey);
+
+          // Resolve the promise
+          resolve();
+        } catch (error) {
+          reject(
+            new Error(
+              `There was a problem while trying to generate a key pair: ${(error as Error | TypeError).message}`
+            )
+          );
+        }
+      }
+    );
   });
 
 /**
@@ -93,7 +88,7 @@ const storeKeys = (key: string): Promise<void> =>
       reject(new Error(`The powershell process could not be run: ${error.message}`));
     });
     ps.stderr.on('data', (error) => {
-      console.log(error.toString());
+      // console.log(error.toString());
       reject(new Error(`The powershell process could not be completed successfully: ${error.toString()}`));
     });
 

@@ -14,8 +14,8 @@ type SaveCredsResponse = {
 type InputFields = 'orgID' | 'conString' | 'baseDN' | 'username' | 'password';
 
 export type SaveCredsRequestBody = {
-  [K in InputFields]: string
-}
+  [K in InputFields]: string;
+};
 
 const flashError = (message?: null | string): void => {
   toast.error(
@@ -30,9 +30,12 @@ const GetCredentials = (): JSX.Element => {
   const [baseDN, setBaseDN] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [password, setPassword] = useState<string | null>(null);
-  const [errors, setErrors] = useState<{
-      [K in InputFields]?: string | null;
-    } | null>(null);
+  const [errors, setErrors] = useState<
+    | {
+        [K in InputFields]?: string | null;
+      }
+    | null
+  >(null);
 
   const navigate = useNavigate();
 
@@ -48,8 +51,12 @@ const GetCredentials = (): JSX.Element => {
 
   /** Validates user's input. */
   const validate = (): boolean => {
-    let orgIDErr, conStringErr, baseDNErr, usernameErr, passwordErr = null;
-  
+    let orgIDErr,
+      conStringErr,
+      baseDNErr,
+      usernameErr,
+      passwordErr = null;
+
     // Validate orgID
     if (!orgID) {
       orgIDErr = 'Specify your Meveto Organization ID.';
@@ -94,7 +101,7 @@ const GetCredentials = (): JSX.Element => {
     }
 
     return true;
-  }
+  };
 
   const saveCredentials = (): void => {
     // Validate data before submission.
@@ -102,16 +109,20 @@ const GetCredentials = (): JSX.Element => {
       return;
     }
 
-    fetch('http://localhost:6970/save', { method: 'post', headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    }, body: JSON.stringify({
-      orgID,
-      conString,
-      baseDN,
-      username,
-      password,
-    })})
+    fetch('http://localhost:6970/save', {
+      method: 'post',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        orgID,
+        conString,
+        baseDN,
+        username,
+        password,
+      }),
+    })
       .then((res) => res.json())
       .then((data: SaveCredsResponse) => {
         if (!data.success) {
@@ -140,13 +151,45 @@ const GetCredentials = (): JSX.Element => {
         connector will use this ID to communicate with your organization.
       </div>
       <div className='mt-3 text-orange-600'>
-        All the values are required. When you press the "Save" button, before saving, the LDAP credentials will be tested to ensure a connection can be established.
+        All the values are required. When you press the "Save" button, before saving, the LDAP credentials will be
+        tested to ensure a connection can be established.
       </div>
-      <LabelledInput label='Meveto Organization ID' value={orgID} setValue={setOrgID} error={!!errors?.orgID} helperText={errors?.orgID} />
-      <LabelledInput label='LDAP Connection String' value={conString} setValue={setConString} error={!!errors?.conString} helperText={errors?.conString} />
-      <LabelledInput label='Base DN' value={baseDN} setValue={setBaseDN} error={!!errors?.baseDN} helperText={errors?.baseDN} />
-      <LabelledInput label='Username' value={username} setValue={setUsername} error={!!errors?.username} helperText={errors?.username} />
-      <LabelledInput label='Password' type='password' value={password} setValue={setPassword} error={!!errors?.password} helperText={errors?.password} />
+      <LabelledInput
+        label='Meveto Organization ID'
+        value={orgID}
+        setValue={setOrgID}
+        error={!!errors?.orgID}
+        helperText={errors?.orgID}
+      />
+      <LabelledInput
+        label='LDAP Connection String'
+        value={conString}
+        setValue={setConString}
+        error={!!errors?.conString}
+        helperText={errors?.conString}
+      />
+      <LabelledInput
+        label='Base DN'
+        value={baseDN}
+        setValue={setBaseDN}
+        error={!!errors?.baseDN}
+        helperText={errors?.baseDN}
+      />
+      <LabelledInput
+        label='Username'
+        value={username}
+        setValue={setUsername}
+        error={!!errors?.username}
+        helperText={errors?.username}
+      />
+      <LabelledInput
+        label='Password'
+        type='password'
+        value={password}
+        setValue={setPassword}
+        error={!!errors?.password}
+        helperText={errors?.password}
+      />
       <div className='mt-10 flex justify-end'>
         <Button variant='contained' size='large' disabled={saving} onClick={saveCredentials}>
           {saving ? 'Testing and saving...' : 'Save'}
