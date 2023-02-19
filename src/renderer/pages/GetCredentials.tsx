@@ -13,6 +13,10 @@ type SaveCredsResponse = {
 
 type InputFields = 'orgID' | 'conString' | 'baseDN' | 'username' | 'password';
 
+export type SaveCredsRequestBody = {
+  [K in InputFields]: string
+}
+
 const flashError = (message?: null | string): void => {
   toast.error(
     message || 'Oops! There was a problem while trying to save the credentials. Contact Meveto if the issue persists.'

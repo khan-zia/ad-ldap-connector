@@ -1,5 +1,6 @@
-import express, { RequestHandler, Response } from 'express';
+import express, { Request, RequestHandler, Response } from 'express';
 import nconf from 'nconf';
+import { SaveCredsRequestBody } from '../../renderer/pages/GetCredentials';
 import { Config } from '../config/config';
 import { createCryptoKeypair, createNewID } from '../methods';
 import { isElevated } from '../utils';
@@ -66,9 +67,9 @@ const configure: RequestHandler = async (_, res: Response<Record<string, unknown
   }
 };
 
-const saveCredentials: RequestHandler = async (req, res: Response<Record<string, unknown>>) => {
+const saveCredentials: RequestHandler = async (req: Request<{}, {}, SaveCredsRequestBody>, res: Response<Record<string, unknown>>) => {
   try {
-    console.log(req.params);
+    console.log(req.body);
 
     return res.json({
       success: true,
