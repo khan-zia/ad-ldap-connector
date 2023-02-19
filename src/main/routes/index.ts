@@ -8,12 +8,10 @@ import { isElevated } from '../utils';
 const router = express.Router();
 
 /**
- * This method executes the initial configuration of the app.
- * It will create a crypto keypair and a new ID for the app.
- * It returns the public key and the ID in response.
+ * This is a middleware function that ensures the current process (request) is being
+ * executed by an Admin or root user.
  */
-const configure: RequestHandler = async (_, res: Response<Record<string, unknown>>) => {
-  // Only admin users with elevated processes can run config.
+const isAdmin: RequestHandler = async (_, res: Response<Record<string, unknown>>, next) => {
   if (!isElevated()) {
     return res.json({
       success: false,
@@ -21,6 +19,15 @@ const configure: RequestHandler = async (_, res: Response<Record<string, unknown
     });
   }
 
+  next();
+};
+
+/**
+ * This method executes the initial configuration of the app.
+ * It will create a crypto keypair and a new ID for the app.
+ * It returns the public key and the ID in response.
+ */
+const configure: RequestHandler = async (_, res: Response<Record<string, unknown>>) => {
   // App must not be already configurted.
   if (nconf.get('state') !== 'pendingConfig') {
     return res.json({
@@ -59,6 +66,18 @@ const configure: RequestHandler = async (_, res: Response<Record<string, unknown
   }
 };
 
+const saveCredentials: RequestHandler = async (req, res: Response<Record<string, unknown>>) => {
+  try {
+    console.log(req.params);
+
+    return res.json({
+      success: true,
+    });
+  } catch (error) {
+    return res.json({ success: false, message: (error as Error).message });
+  }
+};
+
 router.get('/state', (_, res: Response<Record<string, unknown>>) => {
   // Return current state of the connector.
   const state: Config['state'] = nconf.get('state');
@@ -76,6 +95,7 @@ router.get('/info', (_, res: Response<Record<string, unknown>>) => {
   res.json({ success: true, id, publicKey });
 });
 
-router.post('/configure', configure);
+router.post('/configure', isAdmin, configure);
+router.post('/save', isAdmin, saveCredentials);
 
 export default router;
