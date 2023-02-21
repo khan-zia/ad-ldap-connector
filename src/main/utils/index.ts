@@ -60,10 +60,10 @@ export const isElevated = (): ProcessElevated => {
  * containing the error message.
  *
  * @param name Name of the PowerShell script to execute. This must not include the path until the `/src/scripts/` folder.
- * @param params An array of values. Each value will be passed as a parameter to the script.
+ * @param params An object of key value pairs. Each value will be passed as a parameter to the script.
  * @param encode Whether to base64 encode values of the parameters or not. Defaults to false.
  */
-export const executePSScript = (name: string, params?: string[], encode: boolean = false): Promise<void> =>
+export const executePSScript = (name: string, params?: Record<string, string>, encode: boolean = false): Promise<void> =>
   new Promise((resolve, reject) => {
     // Find the script.
     const PSScript = path.join(__dirname, `../../scripts/${name}`);
@@ -72,7 +72,10 @@ export const executePSScript = (name: string, params?: string[], encode: boolean
     let passableParams: string[] = [];
 
     if (params) {
-      passableParams = params.map((value) => (encode ? Buffer.from(value).toString('base64') : value));
+      Object.entries(params).forEach(([key, value]) => {
+        passableParams.push(`-${key}`);
+        passableParams.push(encode ? Buffer.from(value).toString('base64') : value);
+      });
     }
 
     // Execute the script.
@@ -83,12 +86,13 @@ export const executePSScript = (name: string, params?: string[], encode: boolean
       reject(new Error(`The powershell process could not be run: ${error.message}`));
     });
     ps.stderr.on('data', (error) => {
-      // console.log(error.toString());
+      console.log(error.toString());
       reject(new Error(`The powershell process could not be completed successfully: ${error.toString()}`));
     });
 
     ps.stdout.on('data', (data) => {
       // Butter output...
+      console.log({data: data.toString()});
     });
 
     ps.on('exit', (code) => {
