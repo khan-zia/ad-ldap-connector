@@ -73,7 +73,7 @@ const saveCredentials: RequestHandler = async (
   res: Response<Record<string, unknown>>
 ) => {
   try {
-    const {orgID, ...ldapCreds} = req.body;
+    const { orgID, ...ldapCreds } = req.body;
     await testLDAPConnection(ldapCreds);
 
     return res.json({

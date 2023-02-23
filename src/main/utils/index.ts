@@ -63,8 +63,14 @@ export const isElevated = (): ProcessElevated => {
  * @param params An object of key value pairs. Each value will be passed as a parameter to the script.
  * @param encode Whether to base64 encode values of the parameters or not. Defaults to false.
  */
-export const executePSScript = (name: string, params?: Record<string, string>, encode: boolean = false): Promise<void> =>
-  new Promise((resolve, reject) => {
+export const executePSScript = (
+  name: string,
+  params?: Record<string, string>,
+  encode: boolean = false
+): Promise<string | null> => {
+  let output: string | null = null;
+
+  return new Promise((resolve, reject) => {
     // Find the script.
     const PSScript = path.join(__dirname, `../../scripts/${name}`);
 
@@ -86,13 +92,17 @@ export const executePSScript = (name: string, params?: Record<string, string>, e
       reject(new Error(`The powershell process could not be run: ${error.message}`));
     });
     ps.stderr.on('data', (error) => {
-      console.log(error.toString());
+      // console.log(error.toString());
       reject(new Error(`The powershell process could not be completed successfully: ${error.toString()}`));
     });
 
     ps.stdout.on('data', (data) => {
-      // Butter output...
-      console.log({data: data.toString()});
+      if (!output) {
+        output = data.toString();
+        return;
+      }
+
+      output += data.toString();
     });
 
     ps.on('exit', (code) => {
@@ -101,6 +111,45 @@ export const executePSScript = (name: string, params?: Record<string, string>, e
         reject(new Error(`The powershell process could not be completed successfully. It exited with code: ${code}`));
       }
 
-      resolve();
+      resolve(output);
     });
   });
+};
+
+/**
+ * This method removes unwanted parts of the buffer output by the powershell script.
+ * It will accept the entire buffer as a string and remove the following.
+ * - Any exact sentences defined in the method.
+ * - New line symbols e.g. \n
+ * - Carriage return symbols e.g. \r
+ * - Double and single quotes.
+ * - Colon symbols e.g. :
+ * - Trim the string
+ */
+export const sanitizePSResult = (result: string) => {
+  let sanitized = '';
+
+  const remobales = ['The following exception occurred while retrieving member "RefreshCache"'];
+
+  remobales.forEach((remobale) => {
+    sanitized += result.replace(remobale, '');
+  });
+
+  // Remove new lines.
+  sanitized = sanitized.replaceAll('\n', '');
+
+  // Remove carriages.
+  sanitized = sanitized.replaceAll('\r', '');
+
+  // Remove double quotes
+  sanitized = sanitized.replaceAll('"', '');
+
+  // Remove single quotes
+  sanitized = sanitized.replaceAll("'", '');
+
+  // Remove colons
+  sanitized = sanitized.replaceAll(':', '');
+
+  // Return the remaining
+  return sanitized.trim();
+};

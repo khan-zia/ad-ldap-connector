@@ -152,7 +152,10 @@ const GetCredentials = (): JSX.Element => {
       </div>
       <div className='mt-3 text-orange-600'>
         All the values are required. When you press the "Save" button, before saving, the LDAP credentials will be
-        tested to ensure a connection can be established.
+        tested to ensure a connection can be established.{' '}
+        <strong>
+          The password will be encrypted and stored on this device. It will never be transmitted over any network.
+        </strong>
       </div>
       <LabelledInput
         label='Meveto Organization ID'
