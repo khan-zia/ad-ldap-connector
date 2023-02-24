@@ -76,6 +76,8 @@ const saveCredentials: RequestHandler = async (
     const { orgID, ...ldapCreds } = req.body;
     await testLDAPConnection(ldapCreds);
 
+    
+
     return res.json({
       success: true,
     });

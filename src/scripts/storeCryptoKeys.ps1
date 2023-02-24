@@ -1,6 +1,6 @@
 # Accept private key from the node.js side as a parameter.
 param (
-    [string]$EncodedPrivateKey
+    [Parameter(Mandatory=$true)][string]$EncodedPrivateKey
 )
 
 # Convert the key from base64 encoding to normal string.
@@ -31,7 +31,6 @@ $AESTarget = Join-Path -Path $FileDirectory -ChildPath "SymmetricEncryptedPrivat
 
 # Load required .NET modules.
 Add-Type -AssemblyName System.Security
-# Add-Type System.Security.Cryptography
 
 # Convert key's string to byte array.
 $PrivateKeyByteArray = [System.Text.Encoding]::UTF8.GetBytes($PrivateKey)

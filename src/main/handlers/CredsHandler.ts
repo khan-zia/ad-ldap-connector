@@ -24,9 +24,9 @@ export const testLDAPConnection = (credentials: Omit<SaveCredsRequestBody, 'orgI
           reject(new Error(sanitized));
         }
 
-        resolve(false);
+        reject(false);
       })
-      .catch(() => {
-        resolve(false);
+      .catch((error) => {
+        reject(new Error(error.message));
       });
   });

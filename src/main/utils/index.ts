@@ -89,13 +89,14 @@ export const executePSScript = (
 
     // Cath errors if any.
     ps.on('error', (error) => {
-      reject(new Error(`The powershell process could not be run: ${error.message}`));
+      reject(new Error(`The powershell process could not be run: ${sanitizePSResult(error.message)}`));
     });
     ps.stderr.on('data', (error) => {
-      // console.log(error.toString());
-      reject(new Error(`The powershell process could not be completed successfully: ${error.toString()}`));
+      console.log(error.toString());
+      reject(new Error(`The powershell process could not be completed successfully: ${sanitizePSResult(error.toString())}`));
     });
 
+    // Collect buffer's output.
     ps.stdout.on('data', (data) => {
       if (!output) {
         output = data.toString();
