@@ -31,5 +31,6 @@ try {
     $LDAP.Dispose()
 }
 catch {
-    Write-Host $_.Exception.Message -NoNewline
+    Write-Error $_.Exception.Message
+    exit 1
 }

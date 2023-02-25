@@ -9,7 +9,7 @@ $PrivateKey = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase6
 # Ensure the key could successfully be decoded and it was specified.
 if ([string]::IsNullOrEmpty($PrivateKey)) {
     Write-Error "The private key cannot be null or empty."
-    return
+    exit 1
 }
 
 # Location of the keys storage.

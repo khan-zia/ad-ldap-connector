@@ -1,6 +1,7 @@
 import process from 'node:process';
 import childProcess, { spawn } from 'node:child_process';
 import path from 'node:path';
+import fs from 'node:fs';
 
 type ProcessElevated = boolean | undefined;
 
@@ -69,6 +70,7 @@ export const executePSScript = (
   encode: boolean = false
 ): Promise<string | null> => {
   let output: string | null = null;
+  let errorOutput: string | null = null;
 
   return new Promise((resolve, reject) => {
     // Find the script.
@@ -91,9 +93,14 @@ export const executePSScript = (
     ps.on('error', (error) => {
       reject(new Error(`The powershell process could not be run: ${sanitizePSResult(error.message)}`));
     });
+
     ps.stderr.on('data', (error) => {
-      console.log(error.toString());
-      reject(new Error(`The powershell process could not be completed successfully: ${sanitizePSResult(error.toString())}`));
+      if (!errorOutput) {
+        errorOutput = error.toString();
+        return;
+      }
+
+      errorOutput += error.toString();
     });
 
     // Collect buffer's output.
@@ -109,7 +116,7 @@ export const executePSScript = (
     ps.on('exit', (code) => {
       // Must exit with code 0 to be considered sucessful.
       if (code !== 0) {
-        reject(new Error(`The powershell process could not be completed successfully. It exited with code: ${code}`));
+        reject(new Error(errorOutput ? sanitizePSResult(errorOutput) : `The powershell process could not be completed successfully. It exited with code: ${code}`));
       }
 
       resolve(output);
@@ -121,19 +128,28 @@ export const executePSScript = (
  * This method removes unwanted parts of the buffer output by the powershell script.
  * It will accept the entire buffer as a string and remove the following.
  * - Any exact sentences defined in the method.
+ * - Full path of any powershell script which is usualy spit out by PS in case of an error.
  * - New line symbols e.g. \n
  * - Carriage return symbols e.g. \r
  * - Double and single quotes.
  * - Colon symbols e.g. :
  * - Trim the string
  */
-export const sanitizePSResult = (result: string) => {
+export const sanitizePSResult = (result: string, ) => {
   let sanitized = '';
+  const scriptsFolder = path.join(__dirname, '../../scripts');
 
   const remobales = ['The following exception occurred while retrieving member "RefreshCache"'];
 
+  const scripts = fs.readdirSync(scriptsFolder);
+  
+  scripts.forEach((script) => {
+    const scriptPath = path.join(scriptsFolder, script);
+    remobales.push(scriptPath);
+  });
+
   remobales.forEach((remobale) => {
-    sanitized += result.replace(remobale, '');
+    sanitized = result.replace(remobale, '');
   });
 
   // Remove new lines.

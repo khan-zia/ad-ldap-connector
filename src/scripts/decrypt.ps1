@@ -13,7 +13,7 @@ try {
 }
 catch {
     Write-Error $_.Exception.Message
-    break
+    exit 1
 }
 
 # Convert the decrypted bytes to a string.

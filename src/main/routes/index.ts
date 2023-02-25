@@ -3,7 +3,7 @@ import nconf from 'nconf';
 import { SaveCredsRequestBody } from '../../renderer/pages/GetCredentials';
 import { Config } from '../config/config';
 import { createCryptoKeypair, createNewID } from '../handlers/ConfigHandler';
-import { testLDAPConnection } from '../handlers/CredsHandler';
+import { storeCredentials, testLDAPConnection } from '../handlers/CredsHandler';
 import { isElevated } from '../utils';
 
 // Initialize the router.
@@ -75,8 +75,7 @@ const saveCredentials: RequestHandler = async (
   try {
     const { orgID, ...ldapCreds } = req.body;
     await testLDAPConnection(ldapCreds);
-
-    
+    await storeCredentials(ldapCreds);    
 
     return res.json({
       success: true,

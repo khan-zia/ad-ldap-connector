@@ -10,8 +10,6 @@ export const testLDAPConnection = (credentials: Omit<SaveCredsRequestBody, 'orgI
   new Promise((resolve, reject) => {
     // LDAP://MEVETO-DC01.meveto.com
     // CN=Users,DC=meveto,DC=com
-    // CN=Administrator,CN=Users,DC=meveto,DC=com
-    // -37hCwVV?$aOIe;0eGEHgUbJMlCbosZo
     executePSScript('connectLDAP.ps1', credentials)
       .then((result) => {
         if (result) {
@@ -30,3 +28,26 @@ export const testLDAPConnection = (credentials: Omit<SaveCredsRequestBody, 'orgI
         reject(new Error(error.message));
       });
   });
+
+/**
+ * This method stores the LDAP connection string, base DN, username and password.
+ * It will encrypt the password before storage.
+ */
+export const storeCredentials = (credentials: Omit<SaveCredsRequestBody, 'orgID'>): Promise<boolean | string> =>
+new Promise((resolve, reject) => {
+  executePSScript('encrypt.ps1', {value: credentials.password})
+    .then((result) => {
+      if (result) {
+        const sanitized = sanitizePSResult(result);
+
+        console.log({sanitized})
+
+        // reject(new Error(sanitized));
+      }
+
+      reject(false);
+    })
+    .catch((error) => {
+      reject(new Error(error.message));
+    });
+});
