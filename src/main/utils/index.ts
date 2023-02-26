@@ -1,7 +1,6 @@
 import process from 'node:process';
 import childProcess, { spawn } from 'node:child_process';
 import path from 'node:path';
-import fs from 'node:fs';
 
 type ProcessElevated = boolean | undefined;
 
@@ -116,7 +115,14 @@ export const executePSScript = (
     ps.on('exit', (code) => {
       // Must exit with code 0 to be considered sucessful.
       if (code !== 0) {
-        reject(new Error(errorOutput ? sanitizePSResult(errorOutput) : `The powershell process could not be completed successfully. It exited with code: ${code}`));
+        const err = errorOutput || output;
+        reject(
+          new Error(
+            err
+              ? sanitizePSResult(err)
+              : `The powershell process could not be completed successfully. It exited with code: ${code}`
+          )
+        );
       }
 
       resolve(output);
@@ -135,22 +141,10 @@ export const executePSScript = (
  * - Colon symbols e.g. :
  * - Trim the string
  */
-export const sanitizePSResult = (result: string, ) => {
-  let sanitized = '';
+export const sanitizePSResult = (result: string) => {
+  let sanitized = result;
   const scriptsFolder = path.join(__dirname, '../../scripts');
-
-  const remobales = ['The following exception occurred while retrieving member "RefreshCache"'];
-
-  const scripts = fs.readdirSync(scriptsFolder);
-  
-  scripts.forEach((script) => {
-    const scriptPath = path.join(scriptsFolder, script);
-    remobales.push(scriptPath);
-  });
-
-  remobales.forEach((remobale) => {
-    sanitized = result.replace(remobale, '');
-  });
+  const removables = ['The following exception occurred while retrieving member RefreshCache'];
 
   // Remove new lines.
   sanitized = sanitized.replaceAll('\n', '');
@@ -166,6 +160,10 @@ export const sanitizePSResult = (result: string, ) => {
 
   // Remove colons
   sanitized = sanitized.replaceAll(':', '');
+
+  removables.forEach((removable) => {
+    sanitized = sanitized.replace(removable, '');
+  });
 
   // Return the remaining
   return sanitized.trim();

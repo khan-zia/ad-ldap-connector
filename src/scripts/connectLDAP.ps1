@@ -17,20 +17,20 @@ if ($BaseDN) {
     $LdapUrl = $ConString
 }
 
-# Create a new LDAP connection object.
-$LDAP = New-Object System.DirectoryServices.DirectoryEntry(
-    $LdapUrl,
-    $Username,
-    [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)),
-    [System.DirectoryServices.AuthenticationTypes]::Secure
-)
-
 try {
+    # Create a new LDAP connection object.
+    $LDAP = New-Object System.DirectoryServices.DirectoryEntry(
+        $LdapUrl,
+        $Username,
+        [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)),
+        [System.DirectoryServices.AuthenticationTypes]::Secure
+    )
+ 
     $LDAP.RefreshCache()
     Write-Host "ConnectionSuccessful" -NoNewLine
     $LDAP.Dispose()
 }
 catch {
-    Write-Error $_.Exception.Message
+    Write-Host $_.Exception.Message -NoNewline
     exit 1
 }

@@ -2,7 +2,6 @@ import crypto from 'crypto';
 import { spawn } from 'child_process';
 import path from 'path';
 import nconf from 'nconf';
-import { isElevated } from '../utils';
 
 /**
  * Generates and returns an ID to be used as an identifier for this connector

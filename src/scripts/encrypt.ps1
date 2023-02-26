@@ -9,10 +9,10 @@ $byteArray = [System.Text.Encoding]::UTF8.GetBytes($value)
 
 # Encrypt the bytes.
 try {
-    $encryptedBytes = [System.Security.Cryptography.ProtectedData]::Protecty($byteArray, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)
+    $encryptedBytes = [System.Security.Cryptography.ProtectedData]::Protect($byteArray, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)
 }
 catch {
-    Write-Error $_.Exception.Message
+    Write-Host $_.Exception.Message
     exit 1
 }
 

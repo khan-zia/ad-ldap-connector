@@ -6,6 +6,8 @@ import { createCryptoKeypair, createNewID } from '../handlers/ConfigHandler';
 import { storeCredentials, testLDAPConnection } from '../handlers/CredsHandler';
 import { isElevated } from '../utils';
 
+import { body, validationResult } from 'express-validator';
+
 // Initialize the router.
 const router = express.Router();
 
@@ -72,10 +74,26 @@ const saveCredentials: RequestHandler = async (
   req: Request<{}, {}, SaveCredsRequestBody>,
   res: Response<Record<string, unknown>>
 ) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   try {
     const { orgID, ...ldapCreds } = req.body;
+
     await testLDAPConnection(ldapCreds);
-    await storeCredentials(ldapCreds);    
+    await storeCredentials(ldapCreds);
+
+    // Store Meveto org ID on the config.
+    nconf.set('orgID', orgID);
+
+    // Save config.
+    nconf.save((err: Error | null) => {
+      if (err) {
+        return res.json({ success: false, message: 'There was a problem while trying to save credentials.' });
+      }
+    });
 
     return res.json({
       success: true,
@@ -103,6 +121,6 @@ router.get('/info', (_, res: Response<Record<string, unknown>>) => {
 });
 
 router.post('/configure', isAdmin, configure);
-router.post('/save', isAdmin, saveCredentials);
+router.post('/save', isAdmin, body('orgID').isString(), saveCredentials);
 
 export default router;

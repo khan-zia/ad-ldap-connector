@@ -1,5 +1,6 @@
 import { SaveCredsRequestBody } from '../../renderer/pages/GetCredentials';
 import { executePSScript, sanitizePSResult } from '../utils';
+import nconf from 'nconf';
 
 /**
  * This method tests connection to a specified LDAP server using specified base DN, username and
@@ -34,20 +35,24 @@ export const testLDAPConnection = (credentials: Omit<SaveCredsRequestBody, 'orgI
  * It will encrypt the password before storage.
  */
 export const storeCredentials = (credentials: Omit<SaveCredsRequestBody, 'orgID'>): Promise<boolean | string> =>
-new Promise((resolve, reject) => {
-  executePSScript('encrypt.ps1', {value: credentials.password})
-    .then((result) => {
-      if (result) {
-        const sanitized = sanitizePSResult(result);
+  new Promise((resolve, reject) => {
+    executePSScript('encrypt.ps1', { value: credentials.password })
+      .then((result) => {
+        if (result) {
+          const sanitized = sanitizePSResult(result);
 
-        console.log({sanitized})
+          // Store values in the config
+          nconf.set('conString', credentials.conString);
+          nconf.set('baseDN', credentials.baseDN);
+          nconf.set('username', credentials.username);
+          nconf.set('password', sanitized);
 
-        // reject(new Error(sanitized));
-      }
+          resolve(true);
+        }
 
-      reject(false);
-    })
-    .catch((error) => {
-      reject(new Error(error.message));
-    });
-});
+        reject(false);
+      })
+      .catch((error) => {
+        reject(new Error(error.message));
+      });
+  });

@@ -3,9 +3,9 @@
   "port": "6970",
   "appID": "31326-65287-58750",
   "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAl+/VWP0FOwMf46+neFo2EG/5gD21AtNjf9JaCy2ddJI=\n-----END PUBLIC KEY-----\n",
-  "orgID": null,
-  "conString": null,
-  "baseDN": null,
-  "username": null,
-  "password": null
+  "orgID": "12345-12345-12345",
+  "conString": "LDAP://MEVETO-DC01.meveto.com",
+  "baseDN": "CN=Users,DC=meveto,DC=com",
+  "username": "administrator",
+  "password": "AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAASjhSjrN+MUa+YWTn9o15kAAAAAACAAAAAAADZgAAwAAAABAAAAByadFLlJs2U/3r5jJETKGQAAAAAASAAACgAAAAEAAAAGZtL4ag23fkgDlP9TqMyYYQAAAAE9TPVv5ufDmRoVq7PHWtzRQAAAC2yCN1fze14JbLTbQNJ5WSwk+TEQ=="
 }
