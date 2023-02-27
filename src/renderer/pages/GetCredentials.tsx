@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@mui/material';
+import { Button, Dialog, DialogContent, DialogTitle } from '@mui/material';
 import { Config } from '../../main/config/config';
 import LabelledInput from '../components/LabelledInput';
 
@@ -9,6 +9,7 @@ type SaveCredsResponse = {
   success: boolean;
   message?: string;
   state?: Config['state'];
+  errors?: { msg: string }[];
 };
 
 type InputFields = 'orgID' | 'conString' | 'baseDN' | 'username' | 'password';
@@ -36,6 +37,8 @@ const GetCredentials = (): JSX.Element => {
       }
     | null
   >(null);
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [inputErrs, setInputErrs] = useState<SaveCredsResponse['errors'] | null>(null);
 
   const navigate = useNavigate();
 
@@ -105,9 +108,9 @@ const GetCredentials = (): JSX.Element => {
 
   const saveCredentials = (): void => {
     // Validate data before submission.
-    if (!validate()) {
-      return;
-    }
+    // if (!validate()) {
+    //   return;
+    // }
 
     fetch('http://localhost:6970/save', {
       method: 'post',
@@ -125,6 +128,14 @@ const GetCredentials = (): JSX.Element => {
     })
       .then((res) => res.json())
       .then((data: SaveCredsResponse) => {
+        // Check for validation errors.
+        if (data.errors) {
+          setInputErrs(data.errors);
+          setShowModal(true);
+          return;
+        }
+
+        console.log(data);
         if (!data.success) {
           flashError(data.message);
           return;
@@ -133,6 +144,7 @@ const GetCredentials = (): JSX.Element => {
         //
       })
       .catch((error) => {
+        console.log('400 goes here');
         flashError((error as Error).message);
       });
   };
@@ -140,6 +152,18 @@ const GetCredentials = (): JSX.Element => {
   return (
     <>
       <Toaster />
+      <Dialog open={showModal}>
+        <DialogTitle>The following errors were encountered with your request.</DialogTitle>
+        {inputErrs && (
+          <DialogContent>
+            <ul>
+              {inputErrs.map((err) => {
+                <li>{err.msg}</li>;
+              })}
+            </ul>
+          </DialogContent>
+        )}
+      </Dialog>
       <div className='text-lg font-semibold'>Meveto AD/LDAP Connector Configuration</div>
       <div className='mt-4'>
         The connector will need access to your AD or any LDAP store. Fill in the following information that's required

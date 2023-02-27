@@ -6,7 +6,7 @@ import { createCryptoKeypair, createNewID } from '../handlers/ConfigHandler';
 import { storeCredentials, testLDAPConnection } from '../handlers/CredsHandler';
 import { isElevated } from '../utils';
 
-import { body, validationResult } from 'express-validator';
+import { check, validationResult } from 'express-validator';
 
 // Initialize the router.
 const router = express.Router();
@@ -74,6 +74,7 @@ const saveCredentials: RequestHandler = async (
   req: Request<{}, {}, SaveCredsRequestBody>,
   res: Response<Record<string, unknown>>
 ) => {
+  // Input validation
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -121,6 +122,26 @@ router.get('/info', (_, res: Response<Record<string, unknown>>) => {
 });
 
 router.post('/configure', isAdmin, configure);
-router.post('/save', isAdmin, body('orgID').isString(), saveCredentials);
+router.post(
+  '/save',
+  isAdmin,
+  [
+    check('orgID', 'Please prvoide your Meveto organization ID.')
+      .matches(/^(\d{5}-){2}\d{5}$/)
+      .withMessage(
+        'Your Meveto organization ID is made of 3 sets of 5 digits separated by the dash symbol e.g. 12345-12345-12345'
+      ),
+    check('conString')
+      .exists({ checkNull: true })
+      .withMessage('Please provide an LDAP connection string for your Active Directory.')
+      .bail()
+      .matches(/^(?:LDAP|LDAPS):\/\/.{5,}/)
+      .withMessage('The LDAP connection string is invalid.'),
+    check('baseDN').optional().isString(),
+    check('username', 'Specify your Active Directory/LDAP username'),
+    check('password', 'Specify your Active Directory/LDAP password.'),
+  ],
+  saveCredentials
+);
 
 export default router;
