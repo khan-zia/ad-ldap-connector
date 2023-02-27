@@ -126,7 +126,9 @@ router.post(
   '/save',
   isAdmin,
   [
-    check('orgID', 'Please prvoide your Meveto organization ID.')
+    check('orgID')
+      .exists({checkNull: true})
+      .withMessage('Please prvoide your Meveto organization ID.')
       .matches(/^(\d{5}-){2}\d{5}$/)
       .withMessage(
         'Your Meveto organization ID is made of 3 sets of 5 digits separated by the dash symbol e.g. 12345-12345-12345'
@@ -137,9 +139,9 @@ router.post(
       .bail()
       .matches(/^(?:LDAP|LDAPS):\/\/.{5,}/)
       .withMessage('The LDAP connection string is invalid.'),
-    check('baseDN').optional().isString(),
-    check('username', 'Specify your Active Directory/LDAP username'),
-    check('password', 'Specify your Active Directory/LDAP password.'),
+    check('baseDN').if(check('baseDN').notEmpty()).isString().withMessage('Format of the base base DN is invalid.'),
+    check('username').exists({checkNull: true}).withMessage('Specify your Active Directory/LDAP username.'),
+    check('password').exists({checkNull: true}).withMessage('Specify your Active Directory/LDAP password.'),
   ],
   saveCredentials
 );

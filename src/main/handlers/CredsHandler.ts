@@ -9,8 +9,6 @@ import nconf from 'nconf';
  */
 export const testLDAPConnection = (credentials: Omit<SaveCredsRequestBody, 'orgID'>): Promise<boolean | string> =>
   new Promise((resolve, reject) => {
-    // LDAP://MEVETO-DC01.meveto.com
-    // CN=Users,DC=meveto,DC=com
     executePSScript('connectLDAP.ps1', credentials)
       .then((result) => {
         if (result) {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { Button, Dialog, DialogContent, DialogTitle } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { Config } from '../../main/config/config';
 import LabelledInput from '../components/LabelledInput';
 
@@ -108,9 +108,9 @@ const GetCredentials = (): JSX.Element => {
 
   const saveCredentials = (): void => {
     // Validate data before submission.
-    // if (!validate()) {
-    //   return;
-    // }
+    if (!validate()) {
+      return;
+    }
 
     fetch('http://localhost:6970/save', {
       method: 'post',
@@ -135,7 +135,7 @@ const GetCredentials = (): JSX.Element => {
           return;
         }
 
-        console.log(data);
+        // Check if the request succeeded.
         if (!data.success) {
           flashError(data.message);
           return;
@@ -144,7 +144,6 @@ const GetCredentials = (): JSX.Element => {
         //
       })
       .catch((error) => {
-        console.log('400 goes here');
         flashError((error as Error).message);
       });
   };
@@ -152,17 +151,20 @@ const GetCredentials = (): JSX.Element => {
   return (
     <>
       <Toaster />
-      <Dialog open={showModal}>
+      <Dialog open={showModal} onClose={() => setShowModal(false)}>
         <DialogTitle>The following errors were encountered with your request.</DialogTitle>
         {inputErrs && (
           <DialogContent>
             <ul>
-              {inputErrs.map((err) => {
-                <li>{err.msg}</li>;
-              })}
+              {inputErrs.map((err, i) => (
+                <li key={i}>- {err.msg}</li>
+              ))}
             </ul>
           </DialogContent>
         )}
+          <DialogActions>
+            <Button onClick={() => setShowModal(false)} autoFocus>Okay</Button>
+          </DialogActions>
       </Dialog>
       <div className='text-lg font-semibold'>Meveto AD/LDAP Connector Configuration</div>
       <div className='mt-4'>
@@ -174,15 +176,15 @@ const GetCredentials = (): JSX.Element => {
         To associate this connector's instance with your Meveto organization, you will need to enter its ID. The
         connector will use this ID to communicate with your organization.
       </div>
-      <div className='mt-3 text-orange-600'>
-        All the values are required. When you press the "Save" button, before saving, the LDAP credentials will be
-        tested to ensure a connection can be established.{' '}
+      <div className='mt-3 text-orange-400'>
+        All values except the base Distinguished Name are required. When you press the "Save" button, the LDAP credentials will be tested to ensure a connection can be established.
         <strong>
           The password will be encrypted and stored on this device. It will never be transmitted over any network.
         </strong>
       </div>
       <LabelledInput
         label='Meveto Organization ID'
+        placeholder='e.g. 12345-12345-12345'
         value={orgID}
         setValue={setOrgID}
         error={!!errors?.orgID}
@@ -190,13 +192,15 @@ const GetCredentials = (): JSX.Element => {
       />
       <LabelledInput
         label='LDAP Connection String'
+        placeholder='e.g. LDAP://your-dc.your-domain.com'
         value={conString}
         setValue={setConString}
         error={!!errors?.conString}
-        helperText={errors?.conString}
+        helperText={errors?.conString || 'Make sure to enter "LDAP" or "LDAPS" in capital letters. "ldap" does not work with Active Directory.'}
       />
       <LabelledInput
-        label='Base DN'
+        label='Base Distinguished Name'
+        placeholder='e.g. CN=Users,DC=meveto,DC=com'
         value={baseDN}
         setValue={setBaseDN}
         error={!!errors?.baseDN}
@@ -204,10 +208,11 @@ const GetCredentials = (): JSX.Element => {
       />
       <LabelledInput
         label='Username'
+        placeholder='e.g. administrator'
         value={username}
         setValue={setUsername}
         error={!!errors?.username}
-        helperText={errors?.username}
+        helperText={errors?.username || 'For Active Directory supported username formats are: "Administrator", "administrator@your-domain.com" and "your-domain\\administrator"'}
       />
       <LabelledInput
         label='Password'
