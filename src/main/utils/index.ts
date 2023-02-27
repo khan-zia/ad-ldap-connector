@@ -60,7 +60,8 @@ export const isElevated = (): ProcessElevated => {
  * containing the error message.
  *
  * @param name Name of the PowerShell script to execute. This must not include the path until the `/src/scripts/` folder.
- * @param params An object of key value pairs. Each value will be passed as a parameter to the script.
+ * @param params An object of key value pairs. Each value will be passed as a parameter to the script. If a key is set to Null,
+ *               it will be omitted.
  * @param encode Whether to base64 encode values of the parameters or not. Defaults to false.
  */
 export const executePSScript = (
@@ -80,13 +81,15 @@ export const executePSScript = (
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
-        passableParams.push(`-${key}`);
-        passableParams.push(encode ? Buffer.from(value).toString('base64') : value);
+        if (value) {
+          passableParams.push(`-${key}`);
+          passableParams.push(encode ? Buffer.from(value).toString('base64') : value);
+        }
       });
     }
 
     // Execute the script.
-    const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', PSScript, ...passableParams]);
+    const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-NonInteractive', '-File', PSScript, ...passableParams]);
 
     // Cath errors if any.
     ps.on('error', (error) => {

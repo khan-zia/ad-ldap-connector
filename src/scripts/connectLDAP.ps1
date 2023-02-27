@@ -1,28 +1,28 @@
 # Expect LDAP connection credentials as parameters.
 param (
-    [Parameter(Mandatory = $true)][string] $ConString,
-    [Parameter(Mandatory = $false)][string] $BaseDN,
-    [Parameter(Mandatory = $true)][string] $Username,
-    [Parameter(Mandatory = $true)][string] $Password
+    [Parameter(Mandatory = $true)][string] $conString,
+    [Parameter(Mandatory = $true)][string] $baseDN,
+    [Parameter(Mandatory = $true)][string] $username,
+    [Parameter(Mandatory = $true)][string] $password
 )
 
 # Convert the password to a secure string and nullify the plain string version.
-$SecurePassword = ConvertTo-SecureString $Password -AsPlainText -Force
-$Password = $null
+$securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+$password = $null
 
-if ($BaseDN) {
-    $LdapUrl = "$ConString/$baseDN"
+if ($baseDN ) {
+    $LdapUrl = "$conString/$baseDN"
 } else {
     # Base DN is undefined, search the entire directory tree
-    $LdapUrl = $ConString
+    $LdapUrl = $conString
 }
 
 try {
     # Create a new LDAP connection object.
     $LDAP = New-Object System.DirectoryServices.DirectoryEntry(
         $LdapUrl,
-        $Username,
-        [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)),
+        $username,
+        [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)),
         [System.DirectoryServices.AuthenticationTypes]::Secure
     )
  

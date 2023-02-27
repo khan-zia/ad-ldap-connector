@@ -56,7 +56,6 @@ const GetCredentials = (): JSX.Element => {
   const validate = (): boolean => {
     let orgIDErr,
       conStringErr,
-      baseDNErr,
       usernameErr,
       passwordErr = null;
 
@@ -74,11 +73,6 @@ const GetCredentials = (): JSX.Element => {
       conStringErr = 'Specify the LDAP connection string that looks like "LDAP://your-org-domain".';
     }
 
-    // Validate baseDN
-    if (!baseDN) {
-      baseDNErr = 'Specify the base DN (Distinguished Name). It looks like "cn=jdoe,ou=Sales,dc=MyDomain,dc=com".';
-    }
-
     // Validate username
     if (!username) {
       usernameErr = 'Specify username of the LDAP user you wish to use for the connection.';
@@ -93,13 +87,12 @@ const GetCredentials = (): JSX.Element => {
     setErrors({
       orgID: orgIDErr,
       conString: conStringErr,
-      baseDN: baseDNErr,
       username: usernameErr,
       password: passwordErr,
     });
 
     // If there were any errors in this check, return false.
-    if (orgIDErr || conStringErr || baseDNErr || usernameErr || passwordErr) {
+    if (orgIDErr || conStringErr || usernameErr || passwordErr) {
       return false;
     }
 
@@ -111,6 +104,8 @@ const GetCredentials = (): JSX.Element => {
     if (!validate()) {
       return;
     }
+
+    setSaving(true);
 
     fetch('http://localhost:6970/save', {
       method: 'post',
@@ -145,12 +140,19 @@ const GetCredentials = (): JSX.Element => {
       })
       .catch((error) => {
         flashError((error as Error).message);
+      })
+      .finally(() => {
+        setSaving(false);
       });
   };
 
   return (
     <>
-      <Toaster />
+      <Toaster toastOptions={{
+        style: {
+          minWidth: 'fit-content'
+        }
+      }} />
       <Dialog open={showModal} onClose={() => setShowModal(false)}>
         <DialogTitle>The following errors were encountered with your request.</DialogTitle>
         {inputErrs && (
@@ -177,7 +179,7 @@ const GetCredentials = (): JSX.Element => {
         connector will use this ID to communicate with your organization.
       </div>
       <div className='mt-3 text-orange-400'>
-        All values except the base Distinguished Name are required. When you press the "Save" button, the LDAP credentials will be tested to ensure a connection can be established.
+        All values except the base Distinguished Name are required. When you press the "Save" button, the LDAP credentials will be tested to ensure a connection can be established.{' '}
         <strong>
           The password will be encrypted and stored on this device. It will never be transmitted over any network.
         </strong>
@@ -203,8 +205,6 @@ const GetCredentials = (): JSX.Element => {
         placeholder='e.g. CN=Users,DC=meveto,DC=com'
         value={baseDN}
         setValue={setBaseDN}
-        error={!!errors?.baseDN}
-        helperText={errors?.baseDN}
       />
       <LabelledInput
         label='Username'
