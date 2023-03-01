@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
 import CopyableText from '../components/CopyableText';
 import { Config } from '../../main/config/config';
+import { toast } from 'react-toastify';
 
 type BeginConfigResponse = {
   success: boolean;
@@ -70,50 +70,44 @@ const BeginConfig = (): JSX.Element => {
       });
   };
 
-  return (
+  return id && publicKey ? (
     <>
-      <Toaster />
-      {id && publicKey ? (
-        <>
-          <div className='text-lg font-semibold'>Meveto AD/LDAP Connector Configuration</div>
-          <div className='mt-4'>
-            The connector has successfully generated a unique identifier (Connector ID) and a pair of a public and
-            private keys. The private key has been encrypted and stored on this computer's file system. Only
-            Administrator users running elevated processes will have the ability to decrypt and retrieve the connector's
-            private key in plain text. Please ensure that Administrator users never run or install untrusted software on
-            this computer.
-          </div>
-          <div className='mt-3'>
-            Collect the following Connector ID and Public Key. These are required to register this connector instance
-            with your Meveto organization using the organization dashboard.
-          </div>
-          <div className='mt-6'>
-            <CopyableText title='Connector ID' text={id} />
-          </div>
-          <div className='mt-6'>
-            <CopyableText title='Public Key' text={publicKey} />
-          </div>
-          <div className='mt-10 flex justify-end'>
-            <Button variant='contained' size='large' onClick={() => navigate('/get-credentials')}>
-              Next
-            </Button>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className='text-lg font-semibold'>Welcome to the Meveto AD/LDAP Connector</div>
-          <div className='mt-4'>
-            The connector needs configuration. It will generate a connector ID which is a unique identifier for the
-            connector instance and a public private key pair. You will need the connector ID and the public key to add
-            this connector to your Meveto organization using the organization admin dashboard.
-          </div>
-          <div className='mt-8'>
-            <Button variant='contained' size='large' onClick={beginConfiguration} disabled={configuring}>
-              {configuring ? 'Configuring...' : 'Begin Configuration'}
-            </Button>
-          </div>
-        </>
-      )}
+      <div className='text-lg font-semibold'>Meveto AD/LDAP Connector Configuration</div>
+      <div className='mt-4'>
+        The connector has successfully generated a unique identifier (Connector ID) and a pair of a public and private
+        keys. The private key has been encrypted and stored on this computer&apos;s file system. Only Administrator
+        users running elevated processes will have the ability to decrypt and retrieve the connector&apos;s private key
+        in plain text. Please ensure that Administrator users never run or install untrusted software on this computer.
+      </div>
+      <div className='mt-3'>
+        Collect the following Connector ID and Public Key. These are required to register this connector instance with
+        your Meveto organization using the organization dashboard.
+      </div>
+      <div className='mt-6'>
+        <CopyableText title='Connector ID' text={id} />
+      </div>
+      <div className='mt-6'>
+        <CopyableText title='Public Key' text={publicKey} />
+      </div>
+      <div className='mt-10 flex justify-end'>
+        <Button variant='contained' size='large' onClick={(): void => navigate('/get-credentials')}>
+          Next
+        </Button>
+      </div>
+    </>
+  ) : (
+    <>
+      <div className='text-lg font-semibold'>Welcome to the Meveto AD/LDAP Connector</div>
+      <div className='mt-4'>
+        The connector needs configuration. It will generate a connector ID which is a unique identifier for the
+        connector instance and a public private key pair. You will need the connector ID and the public key to add this
+        connector to your Meveto organization using the organization admin dashboard.
+      </div>
+      <div className='mt-8'>
+        <Button variant='contained' size='large' onClick={beginConfiguration} disabled={configuring}>
+          {configuring ? 'Configuring...' : 'Begin Configuration'}
+        </Button>
+      </div>
     </>
   );
 };

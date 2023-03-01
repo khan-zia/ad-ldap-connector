@@ -1,7 +1,7 @@
 # Expect LDAP connection credentials as parameters.
 param (
     [Parameter(Mandatory = $true)][string] $conString,
-    [Parameter(Mandatory = $true)][string] $baseDN,
+    [Parameter(Mandatory = $false)][string] $baseDN,
     [Parameter(Mandatory = $true)][string] $username,
     [Parameter(Mandatory = $true)][string] $password
 )

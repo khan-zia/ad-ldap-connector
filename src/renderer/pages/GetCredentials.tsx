@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { Config } from '../../main/config/config';
 import LabelledInput from '../components/LabelledInput';
@@ -148,14 +148,7 @@ const GetCredentials = (): JSX.Element => {
 
   return (
     <>
-      <Toaster
-        toastOptions={{
-          style: {
-            minWidth: 'fit-content',
-          },
-        }}
-      />
-      <Dialog open={showModal} onClose={() => setShowModal(false)}>
+      <Dialog open={showModal} onClose={(): void => setShowModal(false)}>
         <DialogTitle>The following errors were encountered with your request.</DialogTitle>
         {inputErrs && (
           <DialogContent>
@@ -167,23 +160,23 @@ const GetCredentials = (): JSX.Element => {
           </DialogContent>
         )}
         <DialogActions>
-          <Button onClick={() => setShowModal(false)} autoFocus>
+          <Button onClick={(): void => setShowModal(false)} autoFocus>
             Okay
           </Button>
         </DialogActions>
       </Dialog>
       <div className='text-lg font-semibold'>Meveto AD/LDAP Connector Configuration</div>
       <div className='mt-4'>
-        The connector will need access to your AD or any LDAP store. Fill in the following information that's required
-        for establishing a connection. This information is securely stored on this device and used by the connector
-        internally. It's never transmitted to the Meveto servers.
+        The connector will need access to your AD or any LDAP store. Fill in the following information that&apos;s
+        required for establishing a connection. This information is securely stored on this device and used by the
+        connector internally. It&apos;s never transmitted to the Meveto servers.
       </div>
       <div className='mt-3'>
-        To associate this connector's instance with your Meveto organization, you will need to enter its ID. The
+        To associate this connector&apos;s instance with your Meveto organization, you will need to enter its ID. The
         connector will use this ID to communicate with your organization.
       </div>
       <div className='mt-3 text-orange-400'>
-        All values except the base Distinguished Name are required. When you press the "Save" button, the LDAP
+        All values except the base Distinguished Name are required. When you press the &quot;Save&quot; button, the LDAP
         credentials will be tested to ensure a connection can be established.{' '}
         <strong>
           The password will be encrypted and stored on this device. It will never be transmitted over any network.

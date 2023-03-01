@@ -1,16 +1,21 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
+import Toaster from './components/Toaster';
 import BeginConfig from './pages/BeginConfig';
 import GetCredentials from './pages/GetCredentials';
 import Launch from './pages/Launch';
+import 'react-toastify/dist/ReactToastify.css';
+import Home from './pages/Home';
 
 const App = (): JSX.Element => {
   return (
     <Layout>
+      <Toaster />
       <Routes>
         <Route path='/' element={<Launch />} />
         <Route path='/configure' element={<BeginConfig />} />
         <Route path='/get-credentials' element={<GetCredentials />} />
+        <Route path='/home' element={<Home />} />
         <Route
           path='*'
           element={

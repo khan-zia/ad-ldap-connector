@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { Config } from '../../main/config/config';
 
 type AppStateResponse = {
@@ -79,12 +79,7 @@ const Launch = (): JSX.Element => {
     launch();
   }, []);
 
-  return (
-    <>
-      <Toaster />
-      {launching && <div className='text-xl font-bold'>Launching connector...</div>}
-    </>
-  );
+  return <>{launching && <div className='text-xl font-bold'>Launching connector...</div>}</>;
 };
 
 export default Launch;
