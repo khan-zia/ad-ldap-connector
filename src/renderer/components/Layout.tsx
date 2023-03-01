@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Button } from '@mui/material';
-import toast, { Toaster } from 'react-hot-toast';
 import { Config } from '../../main/config/config';
+import { Id, toast } from 'react-toastify';
 
 type LayoutProps = {
   children?: ReactNode | undefined;
@@ -61,7 +61,6 @@ const Layout = (props: LayoutProps): JSX.Element => {
 
   return (
     <>
-      <Toaster />
       <div className='w-full px-8 flex items-center justify-between h-20 shadow-md'>
         <img src='../assets/logo.png' className='w-32 h-12' alt='Meveto Logo' />
         <div className='flex items-center gap-x-4'>
@@ -71,11 +70,7 @@ const Layout = (props: LayoutProps): JSX.Element => {
             </Button>
           )}
           {publicKey && (
-            <Button
-              variant='outlined'
-              size='small'
-              onClick={() => toast(publicKey, { duration: 5000, style: { minWidth: 'fit-content' } })}
-            >
+            <Button variant='outlined' size='small' onClick={(): Id => toast(publicKey, { autoClose: 5000 })}>
               View Public Key
             </Button>
           )}

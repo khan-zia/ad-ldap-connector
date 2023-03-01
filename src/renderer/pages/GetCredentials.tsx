@@ -136,7 +136,14 @@ const GetCredentials = (): JSX.Element => {
           return;
         }
 
-        //
+        // Save app's state in the local storage
+        localStorage.setItem('state', data?.state || 'ready');
+
+        // Flash a success message
+        toast.success('Your LDAP credentials have been successfully validated and stored.');
+
+        // Navigate to Home
+        navigate('/home');
       })
       .catch((error) => {
         flashError((error as Error).message);
