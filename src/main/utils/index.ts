@@ -89,7 +89,14 @@ export const executePSScript = (
     }
 
     // Execute the script.
-    const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-NonInteractive', '-File', PSScript, ...passableParams]);
+    const ps = spawn('powershell.exe', [
+      '-ExecutionPolicy',
+      'Bypass',
+      '-NonInteractive',
+      '-File',
+      PSScript,
+      ...passableParams,
+    ]);
 
     // Cath errors if any.
     ps.on('error', (error) => {

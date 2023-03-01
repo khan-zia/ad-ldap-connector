@@ -148,11 +148,13 @@ const GetCredentials = (): JSX.Element => {
 
   return (
     <>
-      <Toaster toastOptions={{
-        style: {
-          minWidth: 'fit-content'
-        }
-      }} />
+      <Toaster
+        toastOptions={{
+          style: {
+            minWidth: 'fit-content',
+          },
+        }}
+      />
       <Dialog open={showModal} onClose={() => setShowModal(false)}>
         <DialogTitle>The following errors were encountered with your request.</DialogTitle>
         {inputErrs && (
@@ -164,9 +166,11 @@ const GetCredentials = (): JSX.Element => {
             </ul>
           </DialogContent>
         )}
-          <DialogActions>
-            <Button onClick={() => setShowModal(false)} autoFocus>Okay</Button>
-          </DialogActions>
+        <DialogActions>
+          <Button onClick={() => setShowModal(false)} autoFocus>
+            Okay
+          </Button>
+        </DialogActions>
       </Dialog>
       <div className='text-lg font-semibold'>Meveto AD/LDAP Connector Configuration</div>
       <div className='mt-4'>
@@ -179,7 +183,8 @@ const GetCredentials = (): JSX.Element => {
         connector will use this ID to communicate with your organization.
       </div>
       <div className='mt-3 text-orange-400'>
-        All values except the base Distinguished Name are required. When you press the "Save" button, the LDAP credentials will be tested to ensure a connection can be established.{' '}
+        All values except the base Distinguished Name are required. When you press the "Save" button, the LDAP
+        credentials will be tested to ensure a connection can be established.{' '}
         <strong>
           The password will be encrypted and stored on this device. It will never be transmitted over any network.
         </strong>
@@ -198,7 +203,10 @@ const GetCredentials = (): JSX.Element => {
         value={conString}
         setValue={setConString}
         error={!!errors?.conString}
-        helperText={errors?.conString || 'Make sure to enter "LDAP" or "LDAPS" in capital letters. "ldap" does not work with Active Directory.'}
+        helperText={
+          errors?.conString ||
+          'Make sure to enter "LDAP" or "LDAPS" in capital letters. "ldap" does not work with Active Directory.'
+        }
       />
       <LabelledInput
         label='Base Distinguished Name'
@@ -212,7 +220,10 @@ const GetCredentials = (): JSX.Element => {
         value={username}
         setValue={setUsername}
         error={!!errors?.username}
-        helperText={errors?.username || 'For Active Directory supported username formats are: "Administrator", "administrator@your-domain.com" and "your-domain\\administrator"'}
+        helperText={
+          errors?.username ||
+          'For Active Directory supported username formats are: "Administrator", "administrator@your-domain.com" and "your-domain\\administrator"'
+        }
       />
       <LabelledInput
         label='Password'

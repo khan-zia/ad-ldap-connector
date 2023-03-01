@@ -1,5 +1,5 @@
 {
-  "state": "pendingCredentials",
+  "state": "ready",
   "port": "6970",
   "appID": "31326-65287-58750",
   "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAl+/VWP0FOwMf46+neFo2EG/5gD21AtNjf9JaCy2ddJI=\n-----END PUBLIC KEY-----\n",

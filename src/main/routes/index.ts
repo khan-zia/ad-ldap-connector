@@ -71,7 +71,7 @@ const configure: RequestHandler = async (_, res: Response<Record<string, unknown
 };
 
 const saveCredentials: RequestHandler = async (
-  req: Request<{}, {}, SaveCredsRequestBody>,
+  req: Request<object, object, SaveCredsRequestBody>,
   res: Response<Record<string, unknown>>
 ) => {
   // Input validation
@@ -88,6 +88,9 @@ const saveCredentials: RequestHandler = async (
 
     // Store Meveto org ID on the config.
     nconf.set('orgID', orgID);
+
+    // Update the app's state.
+    nconf.set('state', 'ready');
 
     // Save config.
     nconf.save((err: Error | null) => {
@@ -127,7 +130,7 @@ router.post(
   isAdmin,
   [
     check('orgID')
-      .exists({checkNull: true})
+      .exists({ checkNull: true })
       .withMessage('Please prvoide your Meveto organization ID.')
       .matches(/^(\d{5}-){2}\d{5}$/)
       .withMessage(
@@ -140,8 +143,8 @@ router.post(
       .matches(/^(?:LDAP|LDAPS):\/\/.{5,}/)
       .withMessage('The LDAP connection string is invalid.'),
     check('baseDN').if(check('baseDN').notEmpty()).isString().withMessage('Format of the base base DN is invalid.'),
-    check('username').exists({checkNull: true}).withMessage('Specify your Active Directory/LDAP username.'),
-    check('password').exists({checkNull: true}).withMessage('Specify your Active Directory/LDAP password.'),
+    check('username').exists({ checkNull: true }).withMessage('Specify your Active Directory/LDAP username.'),
+    check('password').exists({ checkNull: true }).withMessage('Specify your Active Directory/LDAP password.'),
   ],
   saveCredentials
 );
