@@ -8,4 +8,8 @@ export interface Config {
   baseDN: null | string;
   username: null | string;
   password: null | string;
+  lastGroupsPartialSync: null | string;
+  lastGroupsFullSync: null | string;
+  lastUsersPartialSync: null | string;
+  lastUsersFullSync: null | string;
 }

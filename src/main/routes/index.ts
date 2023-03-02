@@ -7,6 +7,7 @@ import { storeCredentials, testLDAPConnection } from '../handlers/CredsHandler';
 import { isElevated } from '../utils';
 
 import { check, validationResult } from 'express-validator';
+import { LastSyncResponse } from '../../renderer/pages/Home';
 
 // Initialize the router.
 const router = express.Router();
@@ -122,6 +123,24 @@ router.get('/info', (_, res: Response<Record<string, unknown>>) => {
   const publicKey: Config['publicKey'] = nconf.get('publicKey');
 
   res.json({ success: true, id, publicKey });
+});
+
+/** Retrieves the app's last sync time for groups and users. */
+router.get('/last-sync', (_, res: Response<LastSyncResponse>) => {
+  const partialGroup: Config['lastGroupsPartialSync'] = nconf.get('lastGroupsPartialSync');
+  const fullGroup: Config['lastGroupsFullSync'] = nconf.get('lastGroupsFullSync');
+  const partialUser: Config['lastUsersPartialSync'] = nconf.get('lastUsersPartialSync');
+  const fullUser: Config['lastUsersFullSync'] = nconf.get('lastUsersFullSync');
+
+  res.json({
+    success: true,
+    lastSync: {
+      partialGroup,
+      fullGroup,
+      partialUser,
+      fullUser,
+    },
+  });
 });
 
 router.post('/configure', isAdmin, configure);

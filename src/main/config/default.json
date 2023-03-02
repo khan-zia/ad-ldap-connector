@@ -7,5 +7,9 @@
   "conString": "LDAP://meveto-dc01.meveto.com",
   "baseDN": null,
   "username": "administrator",
-  "password": "AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAADs96nYGQcUyYQHZX1ycRJwAAAAACAAAAAAADZgAAwAAAABAAAACOQ18k7vq3gzSJMtq3hE9JAAAAAASAAACgAAAAEAAAAEHGQvf3nSWpwIw8MgESIhsQAAAA7J70JIM9wXJdubpHtTLYshQAAADdRLAarPOqcbOAXNV86M9zskvR8g=="
+  "password": "AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAADs96nYGQcUyYQHZX1ycRJwAAAAACAAAAAAADZgAAwAAAABAAAACOQ18k7vq3gzSJMtq3hE9JAAAAAASAAACgAAAAEAAAAEHGQvf3nSWpwIw8MgESIhsQAAAA7J70JIM9wXJdubpHtTLYshQAAADdRLAarPOqcbOAXNV86M9zskvR8g==",
+  "lastGroupsPartialSync": null,
+  "lastGroupsFullSync": null,
+  "lastUsersPartialSync": null,
+  "lastUsersFullSync": null
 }

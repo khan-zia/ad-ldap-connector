@@ -70,7 +70,11 @@ const Layout = (props: LayoutProps): JSX.Element => {
             </Button>
           )}
           {publicKey && (
-            <Button variant='outlined' size='small' onClick={(): Id => toast(publicKey, { autoClose: 5000 })}>
+            <Button
+              variant='outlined'
+              size='small'
+              onClick={(): Id => toast(publicKey, { autoClose: false, draggable: false })}
+            >
               View Public Key
             </Button>
           )}
