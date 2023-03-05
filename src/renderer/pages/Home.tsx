@@ -1,4 +1,4 @@
-import { Button } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 
@@ -21,6 +21,8 @@ export type LastSyncResponse = {
   lastSync?: LastSyncTime;
 };
 
+type SyncAction = 'partial_groups' | 'full_groups' | 'partial_users' | 'full_users';
+
 const Home = (): JSX.Element => {
   const [lastSync, setLastSync] = useState<LastSyncTime>({
     partialGroup: null,
@@ -28,6 +30,8 @@ const Home = (): JSX.Element => {
     partialUser: null,
     fullUser: null,
   });
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [confirmationMsg, setConfirmationMsg] = useState<string>('');
 
   useEffect(() => {
     fetch('http://localhost:6970/last-sync')
@@ -47,8 +51,48 @@ const Home = (): JSX.Element => {
       });
   }, []);
 
+  const sync = (action: SyncAction): void => {
+    switch (action) {
+      case 'partial_groups':
+        setConfirmationMsg(
+          'If this is the first time of partial groups syncing, then a full groups sync will be performed instead.'
+        );
+        break;
+      case 'full_groups':
+        setConfirmationMsg(
+          'All your AD/LDAP groups will be synced to your Meveto organization. This action will automatically delete any groups that were synced to Meveto before but are no longer available here on the AD/LDAP side.'
+        );
+        break;
+      case 'partial_users':
+        setConfirmationMsg(
+          'If this is the first time of partial users syncing, then a full users sync will be performed instead.'
+        );
+        break;
+      case 'full_users':
+        setConfirmationMsg(
+          'All your AD/LDAP users will be synced to your Meveto organization. This action will automatically delete any users that were synced to Meveto before but are no longer available here on the AD/LDAP side.'
+        );
+        break;
+      default:
+        return;
+    }
+
+    setShowModal(true);
+  };
+
   return (
     <>
+      <Dialog open={showModal} onClose={(): void => setShowModal(false)}>
+        <DialogContent>
+          <div className='text-xl font-semibold'>{confirmationMsg}</div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={(): void => setShowModal(false)}>Cancel</Button>
+          <Button onClick={(): void => setShowModal(false)} autoFocus>
+            Proceed
+          </Button>
+        </DialogActions>
+      </Dialog>
       <div className='text-xl font-semibold'>Sync Groups</div>
       <div>
         Sync your Active Directory or any LDAP store groups. Make sure you understand how the group syncing behaves.
@@ -60,8 +104,12 @@ const Home = (): JSX.Element => {
         <p className='text-sm font-semibold'>Last full sync: {lastSync.fullGroup || 'Never'}</p>
       </div>
       <div className='mt-4 flex gap-x-4 items-center'>
-        <Button variant='outlined'>Partial Groups Sync</Button>
-        <Button variant='contained'>Full Groups Sync</Button>
+        <Button variant='outlined' onClick={(): void => sync('partial_groups')}>
+          Partial Groups Sync
+        </Button>
+        <Button variant='contained' onClick={(): void => sync('full_groups')}>
+          Full Groups Sync
+        </Button>
       </div>
       <div className='mt-12 text-xl font-semibold'>Sync Users</div>
       <div>
@@ -74,8 +122,12 @@ const Home = (): JSX.Element => {
         <p className='text-sm font-semibold'>Last full sync: {lastSync.fullUser || 'Never'}</p>
       </div>
       <div className='mt-4 flex gap-x-4 items-center'>
-        <Button variant='outlined'>Partial Users Sync</Button>
-        <Button variant='contained'>Full Users Sync</Button>
+        <Button variant='outlined' onClick={(): void => sync('partial_users')}>
+          Partial Users Sync
+        </Button>
+        <Button variant='contained' onClick={(): void => sync('full_users')}>
+          Full Users Sync
+        </Button>
       </div>
     </>
   );
