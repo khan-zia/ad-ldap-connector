@@ -11,7 +11,7 @@ type AppStateResponse = {
 
 const flashError = (message?: null | string): void => {
   toast.error(
-    message || 'Oops! There was a problem while trying to lauch the connector. Contact Meveto if the issue persists.'
+    message || 'Oops! There was a problem while trying to launch the connector. Contact Meveto if the issue persists.'
   );
 };
 

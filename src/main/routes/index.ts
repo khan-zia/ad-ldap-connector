@@ -1,13 +1,13 @@
 import express, { Request, RequestHandler, Response } from 'express';
 import nconf from 'nconf';
+import { check, validationResult } from 'express-validator';
 import { SaveCredsRequestBody } from '../../renderer/pages/GetCredentials';
 import { Config } from '../config/config';
 import { createCryptoKeypair, createNewID } from '../handlers/ConfigHandler';
 import { storeCredentials, testLDAPConnection } from '../handlers/CredsHandler';
+import { sync as syncHandler } from '../handlers/SyncHandler';
 import { isElevated } from '../utils';
-
-import { check, validationResult } from 'express-validator';
-import { LastSyncResponse } from '../../renderer/pages/Home';
+import { LastSyncResponse, SyncAction } from '../../renderer/pages/Home';
 
 // Initialize the router.
 const router = express.Router();
@@ -33,7 +33,7 @@ const isAdmin: RequestHandler = async (_, res: Response<Record<string, unknown>>
  * It returns the public key and the ID in response.
  */
 const configure: RequestHandler = async (_, res: Response<Record<string, unknown>>) => {
-  // App must not be already configurted.
+  // App must not be already configured.
   if (nconf.get('state') !== 'pendingConfig') {
     return res.json({
       success: false,
@@ -45,7 +45,7 @@ const configure: RequestHandler = async (_, res: Response<Record<string, unknown
     // Create a new ID for the app.
     createNewID();
 
-    // Create crypto keypair. This encryptes and saves the private key using PowerShell.
+    // Create crypto keypair. This encrypts and saves the private key using PowerShell.
     await createCryptoKeypair();
 
     // Update app's state.
@@ -108,20 +108,40 @@ const saveCredentials: RequestHandler = async (
   }
 };
 
+const sync: RequestHandler = async (
+  req: Request<object, object, { syncAction: SyncAction }>,
+  res: Response<Record<string, unknown>>
+) => {
+  try {
+    const { syncAction } = req.body;
+
+    await syncHandler(syncAction);
+
+    // Save config.
+    // nconf.save((err: Error | null) => {
+    //   if (err) {
+    //     return res.json({ success: false, message: '' });
+    //   }
+    // });
+
+    return res.json({
+      success: true,
+    });
+  } catch (error) {
+    return res.json({ success: false, message: (error as Error).message });
+  }
+};
+
 router.get('/state', (_, res: Response<Record<string, unknown>>) => {
   // Return current state of the connector.
   const state: Config['state'] = nconf.get('state');
-
   res.json({ success: true, state });
 });
 
-/**
- * Retrieves the app's ID and public key if set.
- */
+/** Retrieves the app's ID and public key if set. */
 router.get('/info', (_, res: Response<Record<string, unknown>>) => {
   const id: Config['appID'] = nconf.get('appID');
   const publicKey: Config['publicKey'] = nconf.get('publicKey');
-
   res.json({ success: true, id, publicKey });
 });
 
@@ -144,6 +164,7 @@ router.get('/last-sync', (_, res: Response<LastSyncResponse>) => {
 });
 
 router.post('/configure', isAdmin, configure);
+
 router.post(
   '/save',
   isAdmin,
@@ -167,5 +188,7 @@ router.post(
   ],
   saveCredentials
 );
+
+router.post('/sync', isAdmin, sync);
 
 export default router;
