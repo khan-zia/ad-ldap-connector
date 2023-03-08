@@ -1,7 +1,40 @@
 import nconf from 'nconf';
 import { SyncAction } from '../../renderer/pages/Home';
+import { executePSScript } from '../utils';
 
-const syncActions: { [K in SyncAction]: <T>() => Promise<T> } = {
+type SyncActions = { [K in SyncAction]: () => Promise<string | void> };
+interface SyncActionProps extends SyncActions {
+  credentials: () => Promise<
+    { server: string; username: string; password: string; searchBase: string | null } | string
+  >;
+}
+
+const syncActions: SyncActionProps = {
+  credentials: function () {
+    return new Promise((resolve, reject) => {
+      // Decrypt the password.
+      executePSScript('decrypt.ps1', { value: nconf.get('password') })
+        .then((decryptedPassword) => {
+          if (decryptedPassword) {
+            const searchBase = nconf.get('baseDN');
+            resolve({
+              server: nconf.get('conString')?.replace('LDAP://', '')?.replace('LDAPS://', ''),
+              username: nconf.get('username'),
+              password: decryptedPassword,
+              searchBase: searchBase === '' ? null : searchBase,
+            });
+
+            return;
+          }
+
+          reject(new Error('AD/LDAP credentials could not be retrieved.'));
+        })
+        .catch((error) => {
+          reject(new Error(`AD/LDAP credentials could not be retrieved. ${(error as Error).message}`));
+        });
+    });
+  },
+
   partialGroups: () =>
     new Promise((resolve, reject) => {
       //
@@ -18,20 +51,30 @@ const syncActions: { [K in SyncAction]: <T>() => Promise<T> } = {
       const lastSync = nconf.get('lastUsersPartialSync');
 
       if (!lastSync) {
-        resolve(this.fullUsers());
+        this.fullUsers()
+          .then(() => resolve())
+          .catch((error) => reject(new Error(error.message)));
       }
     });
   },
 
   fullUsers: function () {
     return new Promise((resolve, reject) => {
-      // If partial users sync hasn't happened before, then attempt
-      // a full users sync instead.
-      const lastSync = nconf.get('lastUsersPartialSync');
-
-      if (!lastSync) {
-        resolve(this.fullUsers());
-      }
+      this.credentials()
+        .then((creds) => {
+          executePSScript('exportUsers.ps1', creds as Record<string, string>)
+            .then(() => {
+              console.log('RESOLVED>>>');
+              resolve();
+            })
+            .catch((error) => {
+              console.log('REJECTED.....');
+              throw new Error(error.message);
+            });
+        })
+        .catch((error) => {
+          reject(new Error(error.message));
+        });
     });
   },
 };
@@ -46,8 +89,11 @@ const syncActions: { [K in SyncAction]: <T>() => Promise<T> } = {
  *
  * @param action The syncing action.
  */
-export const sync = (action: SyncAction): Promise<boolean | string> =>
+export const sync = (action: SyncAction): Promise<string | void> =>
   new Promise((resolve, reject) => {
-    syncActions[action]();
-    resolve(true);
+    syncActions[action]()
+      .then(() => {
+        resolve();
+      })
+      .catch((error) => reject(new Error(error.message)));
   });

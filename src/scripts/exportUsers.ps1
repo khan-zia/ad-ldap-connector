@@ -39,10 +39,17 @@ $users | ForEach-Object {
     }
 
     $_ | Select-Object emailAddress, objectGuid, @{Name="DisplayName";Expression={$displayName}}, @{Name="Groups";Expression={$groups -join ":"}}
-} | ForEach-Object {
-    $_ | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$env:ProgramFiles\Meveto\Exports\users.csv"
 }
 
-if (!$users) {
-    Write-Host "NoRecords"
+if ($users) {
+    $fileDirectory = "$env:ProgramFiles\Meveto\Exports"
+
+    If (!(Test-Path $fileDirectory)) {
+        # Create the "Meveto" folder first if it doesn't exist.
+        New-Item -ItemType Directory -Path $fileDirectory | Out-Null
+    }
+
+    $users | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\users.csv"
+} else {
+    Write-Host "NoRecords" -NoNewline
 }
