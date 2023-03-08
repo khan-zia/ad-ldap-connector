@@ -1,0 +1,48 @@
+[CmdletBinding()]
+param (
+    [Parameter(Mandatory=$true)][string]$server,
+    [Parameter(Mandatory=$true)][string]$username,
+    [Parameter(Mandatory=$true)][string]$password,
+    [Parameter()][string]$searchBase,
+    [Parameter()][string]$dateString
+)
+
+$credential = New-Object System.Management.Automation.PSCredential($username, (ConvertTo-SecureString -String $password -AsPlainText -Force))
+
+Import-Module ActiveDirectory
+
+if ($dateString) {
+    $users = if ($searchBase) {
+        Get-ADUser -SearchBase $searchBase -Server $server -Credential $credential -Filter {whenChanged -ge $dateString} -Properties objectGuid, emailAddress, givenName, sn, name, memberOf, whenChanged
+    } else {
+        Get-ADUser -Server $server -Credential $credential -Filter {whenChanged -ge $dateString} -Properties objectGuid, emailAddress, givenName, sn, name, memberOf, whenChanged
+    }
+} else {
+    $users = if ($searchBase) {
+        Get-ADUser -SearchBase $searchBase -Server $server -Credential $credential -Filter * -Properties objectGuid, emailAddress, givenName, sn, name, memberOf
+    } else {
+        Get-ADUser -Server $server -Credential $credential -Filter * -Properties objectGuid, emailAddress, givenName, sn, name, memberOf
+    }
+}
+
+$users | ForEach-Object {
+    $groups = $_.memberOf | ForEach-Object { (Get-ADGroup $_).objectGuid }
+
+    $displayName = if ($_.givenName) {
+        if ($_.sn) {
+            "$($_.givenName) $($_.sn)"
+        } else {
+            $_.givenName
+        }
+    } else {
+        $_.name
+    }
+
+    $_ | Select-Object emailAddress, objectGuid, @{Name="DisplayName";Expression={$displayName}}, @{Name="Groups";Expression={$groups -join ":"}}
+} | ForEach-Object {
+    $_ | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$env:ProgramFiles\Meveto\Exports\users.csv"
+}
+
+if (!$users) {
+    Write-Host "NoRecords"
+}

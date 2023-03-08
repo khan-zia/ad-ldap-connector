@@ -1,10 +1,39 @@
+import nconf from 'nconf';
 import { SyncAction } from '../../renderer/pages/Home';
 
-const syncActions: { [K in SyncAction]: () => void } = {
-  partialGroups: () => console.log('Partial groups syncing...'),
-  fullGroups: () => console.log('Full groups syncing..'),
-  partialUsers: () => console.log('Partial users syncing...'),
-  fullUsers: () => console.log('Full users syncing...'),
+const syncActions: { [K in SyncAction]: <T>() => Promise<T> } = {
+  partialGroups: () =>
+    new Promise((resolve, reject) => {
+      //
+    }),
+
+  fullGroups: function <T>(): Promise<T> {
+    throw new Error('Function not implemented.');
+  },
+
+  partialUsers: function () {
+    return new Promise((resolve, reject) => {
+      // If partial users sync hasn't happened before, then attempt
+      // a full users sync instead.
+      const lastSync = nconf.get('lastUsersPartialSync');
+
+      if (!lastSync) {
+        resolve(this.fullUsers());
+      }
+    });
+  },
+
+  fullUsers: function () {
+    return new Promise((resolve, reject) => {
+      // If partial users sync hasn't happened before, then attempt
+      // a full users sync instead.
+      const lastSync = nconf.get('lastUsersPartialSync');
+
+      if (!lastSync) {
+        resolve(this.fullUsers());
+      }
+    });
+  },
 };
 
 /**
