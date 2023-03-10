@@ -67,7 +67,7 @@ export const isElevated = (): ProcessElevated => {
 export const executePSScript = (
   name: string,
   params?: Record<string, string>,
-  encode: boolean = false
+  encode = false
 ): Promise<string | null> => {
   let output: string | null = null;
   let errorOutput: string | null = null;
@@ -77,7 +77,7 @@ export const executePSScript = (
     const PSScript = path.join(__dirname, `../../scripts/${name}`);
 
     // Prepare params.
-    let passableParams: string[] = [];
+    const passableParams: string[] = [];
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -151,9 +151,8 @@ export const executePSScript = (
  * - Colon symbols e.g. :
  * - Trim the string
  */
-export const sanitizePSResult = (result: string) => {
+export const sanitizePSResult = (result: string): string => {
   let sanitized = result;
-  const scriptsFolder = path.join(__dirname, '../../scripts');
   const removables = ['The following exception occurred while retrieving member RefreshCache'];
 
   // Remove new lines.
@@ -177,4 +176,21 @@ export const sanitizePSResult = (result: string) => {
 
   // Return the remaining
   return sanitized.trim();
+};
+
+/**
+ * This method returns current timestamp in UTC that is exactly the same format as the
+ * one used by Active Directory for object attributes such as "whenChanged".
+ *
+ * The format in question is "YYYYMMDDHHMMSS.0Z" for e.g. "20220310151845.0Z"
+ */
+export const currentADCompliantTimestamp = (): string => {
+  const now = new Date();
+  const year = now.getUTCFullYear().toString().padStart(4, '0');
+  const month = (now.getUTCMonth() + 1).toString().padStart(2, '0');
+  const day = now.getUTCDate().toString().padStart(2, '0');
+  const hour = now.getUTCHours().toString().padStart(2, '0');
+  const minute = now.getUTCMinutes().toString().padStart(2, '0');
+  const second = now.getUTCSeconds().toString().padStart(2, '0');
+  return `${year}${month}${day}${hour}${minute}${second}.0Z`;
 };

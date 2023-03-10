@@ -1,6 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import Time from '../components/Time';
 
 const flashError = (message?: null | string): void => {
   toast.error(message || 'Oops! There was a problem while trying to sync. Contact Meveto if the issue persists.');
@@ -139,8 +140,12 @@ const Home = (): JSX.Element => {
       </div>
       <hr className='mt-2 border-gray-300' />
       <div className='p-2 mt-2 bg-gray-100 rounded'>
-        <p className='text-sm font-semibold'>Last partial sync: {lastSync.partialGroup || 'Never'}</p>
-        <p className='text-sm font-semibold'>Last full sync: {lastSync.fullGroup || 'Never'}</p>
+        <p className='text-sm font-semibold'>
+          Last partial sync: <Time time={lastSync.partialGroup} />
+        </p>
+        <p className='text-sm font-semibold'>
+          Last full sync: <Time time={lastSync.fullGroup} />
+        </p>
       </div>
       <div className='mt-4 flex gap-x-4 items-center'>
         <Button variant='outlined' onClick={(): void => sync('partialGroups')}>
@@ -157,8 +162,12 @@ const Home = (): JSX.Element => {
       </div>
       <hr className='mt-2 border-gray-300' />
       <div className='p-2 mt-2 bg-gray-100 rounded'>
-        <p className='text-sm font-semibold'>Last partial sync: {lastSync.partialUser || 'Never'}</p>
-        <p className='text-sm font-semibold'>Last full sync: {lastSync.fullUser || 'Never'}</p>
+        <p className='text-sm font-semibold'>
+          Last partial sync: <Time time={lastSync.partialUser} />
+        </p>
+        <p className='text-sm font-semibold'>
+          Last full sync: <Time time={lastSync.fullUser} />
+        </p>
       </div>
       <div className='mt-4 flex gap-x-4 items-center'>
         <Button variant='outlined' onClick={(): void => sync('partialUsers')}>

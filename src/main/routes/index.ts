@@ -118,11 +118,11 @@ const sync: RequestHandler = async (
     await syncHandler(syncAction);
 
     // Save config.
-    // nconf.save((err: Error | null) => {
-    //   if (err) {
-    //     return res.json({ success: false, message: '' });
-    //   }
-    // });
+    nconf.save((err: Error | null) => {
+      if (err) {
+        return res.json({ success: false, message: '' });
+      }
+    });
 
     return res.json({
       success: true,

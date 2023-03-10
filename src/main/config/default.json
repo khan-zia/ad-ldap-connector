@@ -5,11 +5,11 @@
   "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAdR4J25pC54vAhvnUAgOJH8lbithKvF713mp3EVWgwwU=\n-----END PUBLIC KEY-----\n",
   "orgID": "12345-12345-12344",
   "conString": "LDAP://meveto-dc01.meveto.com",
-  "baseDN": null,
+  "baseDN": "CN=Users,DC=meveto,DC=com",
   "username": "administrator",
   "password": "AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAADs96nYGQcUyYQHZX1ycRJwAAAAACAAAAAAADZgAAwAAAABAAAACOQ18k7vq3gzSJMtq3hE9JAAAAAASAAACgAAAAEAAAAEHGQvf3nSWpwIw8MgESIhsQAAAA7J70JIM9wXJdubpHtTLYshQAAADdRLAarPOqcbOAXNV86M9zskvR8g==",
   "lastGroupsPartialSync": null,
   "lastGroupsFullSync": null,
-  "lastUsersPartialSync": null,
-  "lastUsersFullSync": null
+  "lastUsersPartialSync": "20230310203932.0Z",
+  "lastUsersFullSync": "20230310203932.0Z"
 }

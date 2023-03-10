@@ -1,6 +1,7 @@
 import nconf from 'nconf';
 import { SyncAction } from '../../renderer/pages/Home';
-import { executePSScript } from '../utils';
+import { currentADCompliantTimestamp, executePSScript } from '../utils';
+import { sendPayload, WEBHOOK } from './WebhooksHandler';
 
 type SyncActions = { [K in SyncAction]: () => Promise<string | void> };
 interface SyncActionProps extends SyncActions {
@@ -52,9 +53,56 @@ const syncActions: SyncActionProps = {
 
       if (!lastSync) {
         this.fullUsers()
-          .then(() => resolve())
+          .then(() => {
+            // Set the last time for partial user sync.
+            nconf.set('lastUsersPartialSync', currentADCompliantTimestamp());
+
+            resolve();
+          })
           .catch((error) => reject(new Error(error.message)));
+        return;
       }
+
+      this.credentials()
+        .then((creds) => {
+          if (typeof creds !== 'object') {
+            return;
+          }
+
+          executePSScript('exportUsers.ps1', { ...creds, dateString: lastSync } as Record<string, string>)
+            .then((res: string | null) => {
+              if (res && res === 'NoRecords') {
+                reject(new Error('Nothing to sync since the last sync.'));
+                return;
+              }
+
+              // Send the payload to Meveto
+              const webhook = sendPayload();
+
+              // Handle if the webhook failed.
+              if (webhook.status === WEBHOOK.FAILURE) {
+                reject(
+                  new Error(
+                    webhook.message ||
+                      'There was a problem while trying to send data to Meveto. Contact our support if the issue persists.'
+                  )
+                );
+
+                return;
+              }
+
+              // Set the last time of full user sync.
+              nconf.set('lastUsersFullSync', currentADCompliantTimestamp());
+
+              resolve();
+            })
+            .catch((error) => {
+              reject(new Error(error.message));
+            });
+        })
+        .catch((error) => {
+          reject(new Error(error.message));
+        });
     });
   },
 
@@ -63,13 +111,29 @@ const syncActions: SyncActionProps = {
       this.credentials()
         .then((creds) => {
           executePSScript('exportUsers.ps1', creds as Record<string, string>)
-            .then(() => {
-              console.log('RESOLVED>>>');
+            .then((res) => {
+              // Send the payload to Meveto
+              const webhook = sendPayload();
+
+              // Handle if the webhook failed.
+              if (webhook.status === WEBHOOK.FAILURE) {
+                reject(
+                  new Error(
+                    webhook.message ||
+                      'There was a problem while trying to send data to Meveto. Contact our support if the issue persists.'
+                  )
+                );
+
+                return;
+              }
+
+              // Set the last time of full user sync.
+              nconf.set('lastUsersFullSync', currentADCompliantTimestamp());
+
               resolve();
             })
             .catch((error) => {
-              console.log('REJECTED.....');
-              throw new Error(error.message);
+              reject(new Error(error.message));
             });
         })
         .catch((error) => {
@@ -92,7 +156,7 @@ const syncActions: SyncActionProps = {
 export const sync = (action: SyncAction): Promise<string | void> =>
   new Promise((resolve, reject) => {
     syncActions[action]()
-      .then(() => {
+      .then((res) => {
         resolve();
       })
       .catch((error) => reject(new Error(error.message)));

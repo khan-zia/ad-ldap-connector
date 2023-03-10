@@ -12,44 +12,50 @@ $credential = New-Object System.Management.Automation.PSCredential($username, (C
 Import-Module ActiveDirectory
 
 if ($dateString) {
-    $users = if ($searchBase) {
-        Get-ADUser -SearchBase $searchBase -Server $server -Credential $credential -Filter {whenChanged -ge $dateString} -Properties objectGuid, emailAddress, givenName, sn, name, memberOf, whenChanged
+    if ($searchBase) {
+        $command = "Get-ADUser -SearchBase '$searchBase' -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString} -Properties objectGuid, emailAddress, givenName, sn, name, memberOf, whenChanged"
     } else {
-        Get-ADUser -Server $server -Credential $credential -Filter {whenChanged -ge $dateString} -Properties objectGuid, emailAddress, givenName, sn, name, memberOf, whenChanged
+        $command = "Get-ADUser -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString} -Properties objectGuid, emailAddress, givenName, sn, name, memberOf, whenChanged"
     }
 } else {
-    $users = if ($searchBase) {
-        Get-ADUser -SearchBase $searchBase -Server $server -Credential $credential -Filter * -Properties objectGuid, emailAddress, givenName, sn, name, memberOf
+    if ($searchBase) {
+        $command = "Get-ADUser -SearchBase '$searchBase' -Server $server -Credential `$credential -Filter * -Properties objectGuid, emailAddress, givenName, sn, name, memberOf"
     } else {
-        Get-ADUser -Server $server -Credential $credential -Filter * -Properties objectGuid, emailAddress, givenName, sn, name, memberOf
+        $command = "Get-ADUser -Server $server -Credential `$credential -Filter * -Properties objectGuid, emailAddress, givenName, sn, name, memberOf"
     }
 }
 
-$users | ForEach-Object {
-    $groups = $_.memberOf | ForEach-Object { (Get-ADGroup $_).objectGuid }
+try {
+    $users = Invoke-Expression $command | ForEach-Object {
+        $groups = $_.memberOf | ForEach-Object { (Get-ADGroup $_).objectGuid }
 
-    $displayName = if ($_.givenName) {
-        if ($_.sn) {
-            "$($_.givenName) $($_.sn)"
+        $displayName = if ($_.givenName) {
+            if ($_.sn) {
+                "$($_.givenName) $($_.sn)"
+            } else {
+                $_.givenName
+            }
         } else {
-            $_.givenName
+            $_.name
         }
+
+        $_ | Select-Object emailAddress, objectGuid, @{Name="DisplayName";Expression={$displayName}}, @{Name="Groups";Expression={$groups -join ":"}}
+    }
+
+    if ($users) {
+        $fileDirectory = "$env:ProgramFiles\Meveto\Exports"
+
+        If (!(Test-Path $fileDirectory)) {
+            # Create the "Meveto" folder first if it doesn't exist.
+            New-Item -ItemType Directory -Path $fileDirectory | Out-Null
+        }
+
+        $users | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\users.csv"
     } else {
-        $_.name
+        Write-Host "NoRecords" -NoNewline
     }
-
-    $_ | Select-Object emailAddress, objectGuid, @{Name="DisplayName";Expression={$displayName}}, @{Name="Groups";Expression={$groups -join ":"}}
 }
-
-if ($users) {
-    $fileDirectory = "$env:ProgramFiles\Meveto\Exports"
-
-    If (!(Test-Path $fileDirectory)) {
-        # Create the "Meveto" folder first if it doesn't exist.
-        New-Item -ItemType Directory -Path $fileDirectory | Out-Null
-    }
-
-    $users | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\users.csv"
-} else {
-    Write-Host "NoRecords" -NoNewline
+catch {
+    Write-Host $_.Exception.Message
+    exit 1
 }
