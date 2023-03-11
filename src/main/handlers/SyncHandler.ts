@@ -36,13 +36,101 @@ const syncActions: SyncActionProps = {
     });
   },
 
-  partialGroups: () =>
-    new Promise((resolve, reject) => {
-      //
-    }),
+  partialGroups: function () {
+    return new Promise((resolve, reject) => {
+      // If partial groups sync hasn't happened before, then attempt
+      // a full groups sync instead.
+      const lastSync = nconf.get('lastGroupsPartialSync');
 
-  fullGroups: function <T>(): Promise<T> {
-    throw new Error('Function not implemented.');
+      if (!lastSync) {
+        this.fullGroups()
+          .then(() => {
+            // Set the last time for partial user sync.
+            nconf.set('lastGroupsPartialSync', currentADCompliantTimestamp());
+
+            resolve();
+          })
+          .catch((error) => reject(new Error(error.message)));
+        return;
+      }
+
+      this.credentials()
+        .then((creds) => {
+          if (typeof creds !== 'object') {
+            return;
+          }
+
+          executePSScript('exportGroups.ps1', { ...creds, dateString: lastSync } as Record<string, string>)
+            .then((res: string | null) => {
+              if (res && res === 'NoRecords') {
+                reject(new Error('Nothing to sync since the last sync.'));
+                return;
+              }
+
+              // Send the payload to Meveto
+              const webhook = sendPayload();
+
+              // Handle if the webhook failed.
+              if (webhook.status === WEBHOOK.FAILURE) {
+                reject(
+                  new Error(
+                    webhook.message ||
+                      'There was a problem while trying to send data to Meveto. Contact our support if the issue persists.'
+                  )
+                );
+
+                return;
+              }
+
+              // Set the last time of partial user sync.
+              nconf.set('lastGroupsPartialSync', currentADCompliantTimestamp());
+
+              resolve();
+            })
+            .catch((error) => {
+              reject(new Error(error.message));
+            });
+        })
+        .catch((error) => {
+          reject(new Error(error.message));
+        });
+    });
+  },
+
+  fullGroups: function () {
+    return new Promise((resolve, reject) => {
+      this.credentials()
+        .then((creds) => {
+          executePSScript('exportGroups.ps1', creds as Record<string, string>)
+            .then((res) => {
+              // Send the payload to Meveto
+              const webhook = sendPayload();
+
+              // Handle if the webhook failed.
+              if (webhook.status === WEBHOOK.FAILURE) {
+                reject(
+                  new Error(
+                    webhook.message ||
+                      'There was a problem while trying to send data to Meveto. Contact our support if the issue persists.'
+                  )
+                );
+
+                return;
+              }
+
+              // Set the last time of full user sync.
+              nconf.set('lastGroupsFullSync', currentADCompliantTimestamp());
+
+              resolve();
+            })
+            .catch((error) => {
+              reject(new Error(error.message));
+            });
+        })
+        .catch((error) => {
+          reject(new Error(error.message));
+        });
+    });
   },
 
   partialUsers: function () {
@@ -91,8 +179,8 @@ const syncActions: SyncActionProps = {
                 return;
               }
 
-              // Set the last time of full user sync.
-              nconf.set('lastUsersFullSync', currentADCompliantTimestamp());
+              // Set the last time of partial user sync.
+              nconf.set('lastUsersPartialSync', currentADCompliantTimestamp());
 
               resolve();
             })
@@ -156,7 +244,7 @@ const syncActions: SyncActionProps = {
 export const sync = (action: SyncAction): Promise<string | void> =>
   new Promise((resolve, reject) => {
     syncActions[action]()
-      .then((res) => {
+      .then(() => {
         resolve();
       })
       .catch((error) => reject(new Error(error.message)));
