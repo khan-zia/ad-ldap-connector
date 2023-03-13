@@ -53,3 +53,6 @@ catch {
     Write-Host $_.Exception.Message
     exit 1
 }
+
+# $file = Join-Path -Path $PSScriptRoot -ChildPath "MyFile.ps1"
+# & $file

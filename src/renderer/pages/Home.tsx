@@ -34,7 +34,7 @@ const Home = (): JSX.Element => {
   const [syncAction, setSyncAction] = useState<SyncAction | null>(null);
   const [syncing, setSyncing] = useState<boolean>(false);
 
-  useEffect(() => {
+  const pullLastSync = (): Promise<void> =>
     fetch('http://localhost:6970/last-sync')
       .then((res) => res.json())
       .then((data: LastSyncResponse) => {
@@ -50,6 +50,9 @@ const Home = (): JSX.Element => {
       .catch((error) => {
         flashError((error as Error).message);
       });
+
+  useEffect(() => {
+    pullLastSync();
   }, []);
 
   const sync = (action: SyncAction): void => {
@@ -101,7 +104,6 @@ const Home = (): JSX.Element => {
     })
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
         // Check if the request succeeded.
         if (!data.success) {
           flashError(data.message);
@@ -110,9 +112,11 @@ const Home = (): JSX.Element => {
 
         // Flash a success message
         toast.success('Syncing completed successfully!');
+
+        // Pul latest sync info.
+        pullLastSync();
       })
       .catch((error) => {
-        console.log('error');
         flashError((error as Error).message);
       })
       .finally(() => {
@@ -148,10 +152,10 @@ const Home = (): JSX.Element => {
         </p>
       </div>
       <div className='mt-4 flex gap-x-4 items-center'>
-        <Button variant='outlined' onClick={(): void => sync('partialGroups')}>
+        <Button variant='outlined' onClick={(): void => sync('partialGroups')} disabled={syncing}>
           Partial Groups Sync
         </Button>
-        <Button variant='contained' onClick={(): void => sync('fullGroups')}>
+        <Button variant='contained' onClick={(): void => sync('fullGroups')} disabled={syncing}>
           Full Groups Sync
         </Button>
       </div>
@@ -170,10 +174,10 @@ const Home = (): JSX.Element => {
         </p>
       </div>
       <div className='mt-4 flex gap-x-4 items-center'>
-        <Button variant='outlined' onClick={(): void => sync('partialUsers')}>
+        <Button variant='outlined' onClick={(): void => sync('partialUsers')} disabled={syncing}>
           Partial Users Sync
         </Button>
-        <Button variant='contained' onClick={(): void => sync('fullUsers')}>
+        <Button variant='contained' onClick={(): void => sync('fullUsers')} disabled={syncing}>
           Full Users Sync
         </Button>
       </div>
