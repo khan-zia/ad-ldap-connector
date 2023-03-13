@@ -36,17 +36,26 @@ try {
         $_ | Select-Object @{Name="Name";Expression={$displayName}}, description, objectGuid
     }
 
-    if ($groups) {
-        $fileDirectory = "$env:ProgramFiles\Meveto\Exports"
+    $fileDirectory = "$env:ProgramFiles\Meveto\Exports"
 
+    if ($groups) {
         If (!(Test-Path $fileDirectory)) {
             # Create the "Meveto" folder first if it doesn't exist.
             New-Item -ItemType Directory -Path $fileDirectory | Out-Null
         }
 
         $groups | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\groups.csv"
-    } else {
-        Write-Host "NoRecords" -NoNewline
+    }
+
+    # Attempt to identify any deleted groups. Valid only if a dateString has been specified.
+    if ($dateString) {
+        if ($searchBase) {
+            $command = "Get-ADGroup -SearchBase '$searchBase' -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content '$fileDirectory\deleted-groups.csv'"
+        } else {
+            $command = "Get-ADGroup -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content '$fileDirectory\deleted-groups.csv'"
+        }
+
+        Invoke-Expression $command
     }
 }
 catch {
@@ -54,5 +63,6 @@ catch {
     exit 1
 }
 
-# $file = Join-Path -Path $PSScriptRoot -ChildPath "MyFile.ps1"
-# & $file
+# Attempt to identify any deleted groups.
+$exportDeleted = Join-Path -Path $PSScriptRoot -ChildPath "exportDeletedObjects.ps1"
+&$exportDeleted "group" $dateString

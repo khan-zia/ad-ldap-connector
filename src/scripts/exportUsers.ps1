@@ -42,17 +42,26 @@ try {
         $_ | Select-Object emailAddress, objectGuid, @{Name="DisplayName";Expression={$displayName}}, @{Name="Groups";Expression={$groups -join ":"}}
     }
 
-    if ($users) {
-        $fileDirectory = "$env:ProgramFiles\Meveto\Exports"
+    $fileDirectory = "$env:ProgramFiles\Meveto\Exports"
 
+    if ($users) {
         If (!(Test-Path $fileDirectory)) {
             # Create the "Meveto" folder first if it doesn't exist.
             New-Item -ItemType Directory -Path $fileDirectory | Out-Null
         }
 
         $users | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\users.csv"
-    } else {
-        Write-Host "NoRecords" -NoNewline
+    }
+
+    # Attempt to identify any deleted users. Valid only if a dateString has been specified.
+    if ($dateString) {
+        if ($searchBase) {
+            $command = "Get-ADUser -SearchBase '$searchBase' -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content '$fileDirectory\deleted-users.csv'"
+        } else {
+            $command = "Get-ADUser -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content '$fileDirectory\deleted-users.csv'"
+        }
+
+        Invoke-Expression $command
     }
 }
 catch {
