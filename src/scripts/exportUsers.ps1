@@ -13,13 +13,13 @@ Import-Module ActiveDirectory
 
 if ($dateString) {
     if ($searchBase) {
-        $command = "Get-ADUser -SearchBase '$searchBase' -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString} -Properties objectGuid, emailAddress, givenName, sn, name, memberOf, whenChanged"
+        $command = "Get-ADUser -SearchBase `"$searchBase`" -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString} -Properties objectGuid, emailAddress, givenName, sn, name, memberOf, whenChanged"
     } else {
         $command = "Get-ADUser -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString} -Properties objectGuid, emailAddress, givenName, sn, name, memberOf, whenChanged"
     }
 } else {
     if ($searchBase) {
-        $command = "Get-ADUser -SearchBase '$searchBase' -Server $server -Credential `$credential -Filter * -Properties objectGuid, emailAddress, givenName, sn, name, memberOf"
+        $command = "Get-ADUser -SearchBase `"$searchBase`" -Server $server -Credential `$credential -Filter * -Properties objectGuid, emailAddress, givenName, sn, name, memberOf"
     } else {
         $command = "Get-ADUser -Server $server -Credential `$credential -Filter * -Properties objectGuid, emailAddress, givenName, sn, name, memberOf"
     }
@@ -27,7 +27,7 @@ if ($dateString) {
 
 try {
     $users = Invoke-Expression $command | ForEach-Object {
-        $groups = $_.memberOf | ForEach-Object { (Get-ADGroup $_).objectGuid }
+        $groups = $_.memberOf | ForEach-Object { (Get-ADGroup -Server $server -Credential $credential $_).objectGuid }
 
         $displayName = if ($_.givenName) {
             if ($_.sn) {
@@ -56,12 +56,12 @@ try {
     # Attempt to identify any deleted users. Valid only if a dateString has been specified.
     if ($dateString) {
         if ($searchBase) {
-            $command = "Get-ADUser -SearchBase '$searchBase' -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content '$fileDirectory\deleted-users.csv'"
+            $command = "Get-ADObject -SearchBase `"$searchBase`" -Server $server -Credential `$credential -Filter {objectClass -eq `"user`" -and whenChanged -ge `$dateString -and isDeleted -eq `$true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid"
         } else {
-            $command = "Get-ADUser -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content '$fileDirectory\deleted-users.csv'"
+            $command = "Get-ADObject -Server $server -Credential `$credential -Filter {objectClass -eq `"user`" -and whenChanged -ge `$dateString -and isDeleted -eq `$true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid"
         }
 
-        Invoke-Expression $command
+        Invoke-Expression $command | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\deleted-users.csv"
     }
 }
 catch {

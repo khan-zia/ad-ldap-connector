@@ -13,27 +13,29 @@ Import-Module ActiveDirectory
 
 if ($dateString) {
     if ($searchBase) {
-        $command = "Get-ADGroup -SearchBase '$searchBase' -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString} -Properties objectGuid, name, description, cn, whenChanged"
+        $command = "Get-ADGroup -SearchBase `"$searchBase`" -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString} -Properties objectGuid, name, description, cn, whenChanged, member"
     } else {
-        $command = "Get-ADGroup -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString} -Properties objectGuid, name, description, cn, whenChanged"
+        $command = "Get-ADGroup -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString} -Properties objectGuid, name, description, cn, whenChanged, member"
     }
 } else {
     if ($searchBase) {
-        $command = "Get-ADGroup -SearchBase '$searchBase' -Server $server -Credential `$credential -Filter * -Properties objectGuid, name, description, cn, whenChanged"
+        $command = "Get-ADGroup -SearchBase `"$searchBase`" -Server $server -Credential `$credential -Filter * -Properties objectGuid, name, description, cn, whenChanged, member"
     } else {
-        $command = "Get-ADGroup -Server $server -Credential `$credential -Filter * -Properties objectGuid, name, description, cn, whenChanged"
+        $command = "Get-ADGroup -Server $server -Credential `$credential -Filter * -Properties objectGuid, name, description, cn, whenChanged, member"
     }
 }
 
 try {
     $groups = Invoke-Expression $command | ForEach-Object {
+        $users = Get-ADGroupMember -Server $server -Credential $credential -Identity $_.objectGuid | Where-Object { $_.ObjectClass -eq "user" } | ForEach-Object { $_.objectGuid }
+
         $displayName = if ($_.name) {
             $_.name
         } else {
             $_.cn
         }
 
-        $_ | Select-Object @{Name="Name";Expression={$displayName}}, description, objectGuid
+        $_ | Select-Object @{Name="Name";Expression={$displayName}}, description, objectGuid, @{Name="Users";Expression={$users -join ":"}}
     }
 
     $fileDirectory = "$env:ProgramFiles\Meveto\Exports"
@@ -50,19 +52,15 @@ try {
     # Attempt to identify any deleted groups. Valid only if a dateString has been specified.
     if ($dateString) {
         if ($searchBase) {
-            $command = "Get-ADGroup -SearchBase '$searchBase' -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content '$fileDirectory\deleted-groups.csv'"
+            $command = "Get-ADObject -SearchBase `"$searchBase`" -Server $server -Credential `$credential -Filter {objectClass -eq `"group`" -and whenChanged -ge `$dateString -and isDeleted -eq `$true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid"
         } else {
-            $command = "Get-ADGroup -Server $server -Credential `$credential -Filter {whenChanged -ge `$dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content '$fileDirectory\deleted-groups.csv'"
+            $command = "Get-ADObject -Server $server -Credential `$credential -Filter {objectClass -eq `"group`" -and whenChanged -ge `$dateString -and isDeleted -eq `$true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid"
         }
 
-        Invoke-Expression $command
+        Invoke-Expression $command | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\deleted-groups.csv"
     }
 }
 catch {
     Write-Host $_.Exception.Message
     exit 1
 }
-
-# Attempt to identify any deleted groups.
-$exportDeleted = Join-Path -Path $PSScriptRoot -ChildPath "exportDeletedObjects.ps1"
-&$exportDeleted "group" $dateString

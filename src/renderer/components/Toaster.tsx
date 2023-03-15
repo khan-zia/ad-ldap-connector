@@ -7,6 +7,7 @@ const Toaster = (): JSX.Element => (
     hideProgressBar={true}
     closeOnClick={false}
     newestOnTop={true}
+    draggable={false}
   />
 );
 

@@ -8,8 +8,8 @@
   "baseDN": "CN=Users,DC=meveto,DC=com",
   "username": "administrator",
   "password": "AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAADs96nYGQcUyYQHZX1ycRJwAAAAACAAAAAAADZgAAwAAAABAAAACOQ18k7vq3gzSJMtq3hE9JAAAAAASAAACgAAAAEAAAAEHGQvf3nSWpwIw8MgESIhsQAAAA7J70JIM9wXJdubpHtTLYshQAAADdRLAarPOqcbOAXNV86M9zskvR8g==",
-  "lastGroupsPartialSync": "20230312235945.0Z",
-  "lastGroupsFullSync": "20230312233301.0Z",
-  "lastUsersPartialSync": "20230312233613.0Z",
-  "lastUsersFullSync": "20230312233237.0Z"
+  "lastGroupsPartialSync": "20230315202205.0Z",
+  "lastGroupsFullSync": "20230315212449.0Z",
+  "lastUsersPartialSync": "20230315195412.0Z",
+  "lastUsersFullSync": "20230315212324.0Z"
 }
