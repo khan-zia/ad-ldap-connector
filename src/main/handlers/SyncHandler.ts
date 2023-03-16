@@ -60,10 +60,14 @@ const syncActions: SyncActionProps = {
             return;
           }
 
-          executePSScript('exportGroups.ps1', { ...creds, dateString: lastSync } as Record<string, string>)
+          // Prepare name for the exported file.
+          const unixTimestamp = Math.floor(Date.now() / 1000);
+          const fileName = `groups_${nconf.get('appID')}_${unixTimestamp}.csv`;
+
+          executePSScript('exportGroups.ps1', { ...creds, dateString: lastSync, fileName } as Record<string, string>)
             .then(() => {
               // Send the payload to Meveto
-              const webhook = sendPayload('partialGroups');
+              const webhook = sendPayload('partialGroups', fileName);
 
               // Handle if the webhook failed.
               if (webhook.status === WEBHOOK.FAILURE) {
@@ -96,10 +100,18 @@ const syncActions: SyncActionProps = {
     return new Promise((resolve, reject) => {
       this.credentials()
         .then((creds) => {
-          executePSScript('exportGroups.ps1', creds as Record<string, string>)
+          if (typeof creds !== 'object') {
+            return;
+          }
+
+          // Prepare name for the exported file.
+          const unixTimestamp = Math.floor(Date.now() / 1000);
+          const fileName = `groups_${nconf.get('appID')}_${unixTimestamp}.csv`;
+
+          executePSScript('exportGroups.ps1', { ...creds, fileName } as Record<string, string>)
             .then(() => {
               // Send the payload to Meveto
-              const webhook = sendPayload('fullGroups');
+              const webhook = sendPayload('fullGroups', fileName);
 
               // Handle if the webhook failed.
               if (webhook.status === WEBHOOK.FAILURE) {
@@ -152,10 +164,14 @@ const syncActions: SyncActionProps = {
             return;
           }
 
-          executePSScript('exportUsers.ps1', { ...creds, dateString: lastSync } as Record<string, string>)
+          // Prepare name for the exported file.
+          const unixTimestamp = Math.floor(Date.now() / 1000);
+          const fileName = `groups_${nconf.get('appID')}_${unixTimestamp}.csv`;
+
+          executePSScript('exportUsers.ps1', { ...creds, dateString: lastSync, fileName } as Record<string, string>)
             .then(() => {
               // Send the payload to Meveto
-              const webhook = sendPayload('partialUsers');
+              const webhook = sendPayload('partialUsers', fileName);
 
               // Handle if the webhook failed.
               if (webhook.status === WEBHOOK.FAILURE) {
@@ -188,10 +204,18 @@ const syncActions: SyncActionProps = {
     return new Promise((resolve, reject) => {
       this.credentials()
         .then((creds) => {
-          executePSScript('exportUsers.ps1', creds as Record<string, string>)
-            .then((res) => {
+          if (typeof creds !== 'object') {
+            return;
+          }
+
+          // Prepare name for the exported file.
+          const unixTimestamp = Math.floor(Date.now() / 1000);
+          const fileName = `groups_${nconf.get('appID')}_${unixTimestamp}.csv`;
+
+          executePSScript('exportUsers.ps1', { ...creds, fileName } as Record<string, string>)
+            .then(() => {
               // Send the payload to Meveto
-              const webhook = sendPayload('fullUsers');
+              const webhook = sendPayload('fullUsers', fileName);
 
               // Handle if the webhook failed.
               if (webhook.status === WEBHOOK.FAILURE) {

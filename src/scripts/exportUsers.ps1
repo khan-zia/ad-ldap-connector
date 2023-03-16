@@ -3,6 +3,7 @@ param (
     [Parameter(Mandatory=$true)][string]$server,
     [Parameter(Mandatory=$true)][string]$username,
     [Parameter(Mandatory=$true)][string]$password,
+    [Parameter(Mandatory=$true)][string]$fileName,
     [Parameter()][string]$searchBase,
     [Parameter()][string]$dateString
 )
@@ -50,12 +51,12 @@ try {
             New-Item -ItemType Directory -Path $fileDirectory | Out-Null
         }
 
-        $users | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\users.csv"
+        $users | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\$fileName"
     }
 
     # Attempt to identify any deleted users. Valid only if a dateString has been specified.
     if ($dateString) {
-        Get-ADObject -Server $server -Credential $credential -Filter {objectClass -eq "user" -and whenChanged -ge $dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\deleted-users.csv"
+        Get-ADObject -Server $server -Credential $credential -Filter {objectClass -eq "user" -and whenChanged -ge $dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\deleted_$fileName"
     }
 }
 catch {

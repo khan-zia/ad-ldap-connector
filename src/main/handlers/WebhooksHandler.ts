@@ -38,6 +38,12 @@ const dispatchActions: DispatchActionProps = {
   },
 };
 
-export const sendPayload = (payloadType: SyncAction): SendPayloadResponse => {
+/**
+ * Sends the specified payload to Meveto for syncing.
+ *
+ * @param payloadType Type of the payload is the same as the action being performed.
+ * @param fileName Name of the exported file by PowerShell that should be sent to Meveto.
+ */
+export const sendPayload = (payloadType: SyncAction, fileName: string): SendPayloadResponse => {
   return { status: WEBHOOK.SUCCESS };
 };
