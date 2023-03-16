@@ -55,13 +55,7 @@ try {
 
     # Attempt to identify any deleted users. Valid only if a dateString has been specified.
     if ($dateString) {
-        if ($searchBase) {
-            $command = "Get-ADObject -SearchBase `"$searchBase`" -Server $server -Credential `$credential -Filter {objectClass -eq `"user`" -and whenChanged -ge `$dateString -and isDeleted -eq `$true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid"
-        } else {
-            $command = "Get-ADObject -Server $server -Credential `$credential -Filter {objectClass -eq `"user`" -and whenChanged -ge `$dateString -and isDeleted -eq `$true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid"
-        }
-
-        Invoke-Expression $command | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\deleted-users.csv"
+        Get-ADObject -Server $server -Credential $credential -Filter {objectClass -eq "user" -and whenChanged -ge $dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\deleted-users.csv"
     }
 }
 catch {

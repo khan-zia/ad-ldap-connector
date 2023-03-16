@@ -51,13 +51,7 @@ try {
 
     # Attempt to identify any deleted groups. Valid only if a dateString has been specified.
     if ($dateString) {
-        if ($searchBase) {
-            $command = "Get-ADObject -SearchBase `"$searchBase`" -Server $server -Credential `$credential -Filter {objectClass -eq `"group`" -and whenChanged -ge `$dateString -and isDeleted -eq `$true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid"
-        } else {
-            $command = "Get-ADObject -Server $server -Credential `$credential -Filter {objectClass -eq `"group`" -and whenChanged -ge `$dateString -and isDeleted -eq `$true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid"
-        }
-
-        Invoke-Expression $command | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\deleted-groups.csv"
+        Get-ADObject -Server $server -Credential $credential -Filter {objectClass -eq "group" -and whenChanged -ge $dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\deleted-groups.csv"
     }
 }
 catch {
