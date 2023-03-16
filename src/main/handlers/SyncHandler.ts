@@ -61,14 +61,9 @@ const syncActions: SyncActionProps = {
           }
 
           executePSScript('exportGroups.ps1', { ...creds, dateString: lastSync } as Record<string, string>)
-            .then((res: string | null) => {
-              if (res && res === 'NoRecords') {
-                reject(new Error('Nothing to sync since the last sync.'));
-                return;
-              }
-
+            .then(() => {
               // Send the payload to Meveto
-              const webhook = sendPayload();
+              const webhook = sendPayload('partialGroups');
 
               // Handle if the webhook failed.
               if (webhook.status === WEBHOOK.FAILURE) {
@@ -102,9 +97,9 @@ const syncActions: SyncActionProps = {
       this.credentials()
         .then((creds) => {
           executePSScript('exportGroups.ps1', creds as Record<string, string>)
-            .then((res) => {
+            .then(() => {
               // Send the payload to Meveto
-              const webhook = sendPayload();
+              const webhook = sendPayload('fullGroups');
 
               // Handle if the webhook failed.
               if (webhook.status === WEBHOOK.FAILURE) {
@@ -158,14 +153,9 @@ const syncActions: SyncActionProps = {
           }
 
           executePSScript('exportUsers.ps1', { ...creds, dateString: lastSync } as Record<string, string>)
-            .then((res: string | null) => {
-              if (res && res === 'NoRecords') {
-                reject(new Error('Nothing to sync since the last sync.'));
-                return;
-              }
-
+            .then(() => {
               // Send the payload to Meveto
-              const webhook = sendPayload();
+              const webhook = sendPayload('partialUsers');
 
               // Handle if the webhook failed.
               if (webhook.status === WEBHOOK.FAILURE) {
@@ -201,7 +191,7 @@ const syncActions: SyncActionProps = {
           executePSScript('exportUsers.ps1', creds as Record<string, string>)
             .then((res) => {
               // Send the payload to Meveto
-              const webhook = sendPayload();
+              const webhook = sendPayload('fullUsers');
 
               // Handle if the webhook failed.
               if (webhook.status === WEBHOOK.FAILURE) {

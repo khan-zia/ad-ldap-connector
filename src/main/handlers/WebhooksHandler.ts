@@ -1,3 +1,5 @@
+import { SyncAction } from '../../renderer/pages/Home';
+
 export const WEBHOOK = {
   SUCCESS: 'success',
   FAILURE: 'failure',
@@ -8,6 +10,34 @@ type SendPayloadResponse = {
   message?: string;
 };
 
-export const sendPayload = (): SendPayloadResponse => {
+type DispatchActions = { [K in SyncAction]: () => void };
+
+interface DispatchActionProps extends DispatchActions {
+  getCsvFile: () => void;
+}
+
+const dispatchActions: DispatchActionProps = {
+  getCsvFile: function () {
+    //
+  },
+
+  partialGroups: function () {
+    //
+  },
+
+  fullGroups: function () {
+    //
+  },
+
+  partialUsers: function () {
+    //
+  },
+
+  fullUsers: function () {
+    //
+  },
+};
+
+export const sendPayload = (payloadType: SyncAction): SendPayloadResponse => {
   return { status: WEBHOOK.SUCCESS };
 };
