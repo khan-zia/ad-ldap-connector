@@ -3,6 +3,7 @@ import path from 'path';
 import { createHash, sign } from 'crypto';
 import nconf from 'nconf';
 import { SyncAction } from '../../renderer/pages/Home';
+import { executePSScript } from '../utils';
 
 export const WEBHOOK = {
   SUCCESS: 'success',
@@ -78,12 +79,12 @@ export const sendPayload = async (
   } catch (error) {
     return {
       status: WEBHOOK.FAILURE,
-      message: `Exported data  at ${filePath} could not be accessed for further processing.`,
+      message: `Exported data at ${filePath} could not be accessed for further processing.`,
     };
   }
 
   // Prepare payload for signature.
-  let payload = {
+  const payload = {
     id: nconf.get('appID'),
     type: payloadType,
     fileName,
@@ -93,13 +94,33 @@ export const sendPayload = async (
   // Sort payload alphabetically.
   const sortedPayload = Object.fromEntries(Object.entries(payload).sort());
 
+  // Get the app's key for signing.
+  let key = null;
+  try {
+    key = await executePSScript('getKey.ps1');
+
+    if (!key) {
+      return {
+        status: WEBHOOK.FAILURE,
+        message: "There was a problem while trying to retrieve the Connector's private key.",
+      };
+    }
+  } catch (error) {
+    return {
+      status: WEBHOOK.FAILURE,
+      message: "There was a problem while trying to retrieve the Connector's private key.",
+    };
+  }
+
   // Sign the sortedPayload after converting it to a string.
   const payloadString = JSON.stringify(sortedPayload);
   const hash = createHash('sha512').update(payloadString).digest();
-  const signature = sign(null, hash, 'privateKey').toString('base64');
+  const signature = sign(null, hash, key).toString('base64');
 
   // Add signature to the final payload.
-  payload = { ...payload, signature };
+  const finalPayload = { ...payload, signature };
+
+  console.log(finalPayload);
 
   return { status: WEBHOOK.SUCCESS };
 };

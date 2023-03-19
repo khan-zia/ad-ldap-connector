@@ -13,7 +13,7 @@ if ([string]::IsNullOrEmpty($PrivateKey)) {
 }
 
 # Location of the keys storage.
-$FileDirectory = "C:\Program Files\Meveto"
+$FileDirectory = "$env:ProgramFiles\Meveto"
 
 If (!(Test-Path $FileDirectory)) {
     # Create the "Meveto" folder first if it doesn't exist.
@@ -76,8 +76,3 @@ $AESACL.AddAccessRule($ReadRule)
 
 Set-Acl $Target -AclObject $PKeyACL
 Set-Acl $AESTarget -AclObject $AESACL
-
-# $CipherText = Get-Content -Path $Target -Encoding Byte
-# $PlainText = [Security.Cryptography.ProtectedData]::Unprotect($CipherText, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
-# $PlainTextString = [System.Text.Encoding]::UTF8.GetString($PlainText)
-# Write-Output $PlainTextString
