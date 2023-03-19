@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { createHash, sign } from 'crypto';
+import { createHash, createPrivateKey, createSign, sign } from 'crypto';
 import nconf from 'nconf';
 import { SyncAction } from '../../renderer/pages/Home';
 import { executePSScript } from '../utils';
@@ -114,13 +114,10 @@ export const sendPayload = async (
 
   // Sign the sortedPayload after converting it to a string.
   const payloadString = JSON.stringify(sortedPayload);
-  const hash = createHash('sha512').update(payloadString).digest();
-  const signature = sign(null, hash, key).toString('base64');
+  const signature = sign(null, Buffer.from(payloadString), createPrivateKey(key)).toString('base64');
 
   // Add signature to the final payload.
   const finalPayload = { ...payload, signature };
-
-  console.log(finalPayload);
 
   return { status: WEBHOOK.SUCCESS };
 };
