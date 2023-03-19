@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { createHash, createPrivateKey, createSign, sign } from 'crypto';
+import { createHash, createPrivateKey, sign } from 'crypto';
+import https from 'https';
 import nconf from 'nconf';
 import { SyncAction } from '../../renderer/pages/Home';
 import { executePSScript } from '../utils';
@@ -83,12 +84,13 @@ export const sendPayload = async (
     };
   }
 
-  // Prepare payload for signature.
+  // Prepare payload for signing.
   const payload = {
     id: nconf.get('appID'),
     type: payloadType,
     fileName,
     checksum,
+    timestamp: Math.floor(Date.now() / 1000),
   };
 
   // Sort payload alphabetically.
@@ -96,6 +98,7 @@ export const sendPayload = async (
 
   // Get the app's key for signing.
   let key = null;
+
   try {
     key = await executePSScript('getKey.ps1');
 
@@ -118,6 +121,70 @@ export const sendPayload = async (
 
   // Add signature to the final payload.
   const finalPayload = { ...payload, signature };
+
+  // Construct HTTP request.
+  const httpOptions: https.RequestOptions = {
+    hostname: 'my.api.mockaroo.com',
+    path: '/api/extensions/ldap-connector/webhook?key=14e90980',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
+
+  // Process the HTTP request.
+  try {
+    await new Promise<SendPayloadResponse>((resolve, reject) => {
+      const req = https.request(httpOptions, (res) => {
+        // Collect response data from the buffer.
+        let responseData = Buffer.from([]);
+        res.on('data', (chunk) => {
+          responseData = Buffer.concat([responseData, chunk]);
+        });
+
+        // Process response upon request completion.
+        res.on('end', () => {
+          const response: SendPayloadResponse = JSON.parse(responseData.toString());
+
+          if (
+            !(res.statusCode && res.statusCode >= 200 && res.statusCode < 300) ||
+            response.status !== WEBHOOK.SUCCESS
+          ) {
+            reject(
+              new Error(
+                response.message || `Sync failed. Received unexpected status code of ${res.statusCode} from Meveto`
+              )
+            );
+          }
+
+          resolve(response);
+        });
+      });
+
+      // Catch any TCP/IP level errors.
+      req.on('error', (error) => {
+        reject(
+          new Error(
+            error.message ||
+              "Sync failed because an unexpected network error occurred. Please check your internet connection and make sure that your firewall settings isn't blocking the Connector."
+          )
+        );
+      });
+
+      // Execute the request.
+      req.write(JSON.stringify(finalPayload));
+      req.end();
+    });
+  } catch (error) {
+    return {
+      status: WEBHOOK.FAILURE,
+      message:
+        (error as Error).message ||
+        'Sync failed because data could not be sent to Meveto. Please contact our support if the issue persists.',
+    };
+  }
+
+  // After the initial HTTP request is successfully completed, upload the CSV file to Meveto.
 
   return { status: WEBHOOK.SUCCESS };
 };
