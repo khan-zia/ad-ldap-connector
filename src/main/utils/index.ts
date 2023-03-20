@@ -1,6 +1,7 @@
 import process from 'node:process';
 import childProcess, { spawn } from 'node:child_process';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 type ProcessElevated = boolean | undefined;
 
@@ -74,7 +75,7 @@ export const executePSScript = (
 
   return new Promise((resolve, reject) => {
     // Find the script.
-    const PSScript = path.join(__dirname, `../../scripts/${name}`);
+    const PSScript = path.join(__dirname(import.meta.url), `../../scripts/${name}`);
 
     // Prepare params.
     const passableParams: string[] = [];
@@ -194,3 +195,15 @@ export const currentADCompliantTimestamp = (): string => {
   const second = now.getUTCSeconds().toString().padStart(2, '0');
   return `${year}${month}${day}${hour}${minute}${second}.0Z`;
 };
+
+/**
+ * This method returns the native JS __filename alternative as __filename is not
+ * available in ES module scope.
+ */
+export const __filename = (moduleUrl: string): string => fileURLToPath(moduleUrl);
+
+/**
+ * This method returns the native JS __dirname alternative as __dirname is not
+ * available in ES module scope.
+ */
+export const __dirname = (moduleUrl: string): string => path.dirname(__filename(moduleUrl));

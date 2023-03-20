@@ -3,6 +3,8 @@ import path from 'path';
 import { createHash, createPrivateKey, sign } from 'crypto';
 import https from 'https';
 import nconf from 'nconf';
+import { File, FormData } from 'formdata-node';
+import got from 'got';
 import { SyncAction } from '../../renderer/pages/Home';
 import { executePSScript } from '../utils';
 
@@ -146,6 +148,17 @@ export const sendPayload = async (
         res.on('end', () => {
           const response: SendPayloadResponse = JSON.parse(responseData.toString());
 
+          // Response received from the Meveto side must be an object.
+          if (!response || typeof response !== 'object') {
+            reject(
+              new Error(
+                'Sync failed. Invalid or unexpected response received while attempting to sync data. Please contact our support if the issue persists.'
+              )
+            );
+
+            return;
+          }
+
           if (
             !(res.statusCode && res.statusCode >= 200 && res.statusCode < 300) ||
             response.status !== WEBHOOK.SUCCESS
@@ -155,6 +168,8 @@ export const sendPayload = async (
                 response.message || `Sync failed. Received unexpected status code of ${res.statusCode} from Meveto`
               )
             );
+
+            return;
           }
 
           resolve(response);
@@ -169,6 +184,8 @@ export const sendPayload = async (
               "Sync failed because an unexpected network error occurred. Please check your internet connection and make sure that your firewall settings isn't blocking the Connector."
           )
         );
+
+        return;
       });
 
       // Execute the request.
@@ -185,6 +202,30 @@ export const sendPayload = async (
   }
 
   // After the initial HTTP request is successfully completed, upload the CSV file to Meveto.
+  try {
+    const form = new FormData();
+
+    fs.readFile(filePath, (error, data) => {
+      if (error) {
+        console.error(`Error: ${error}`);
+        return;
+      }
+
+      const file = new File(data, fileName, {
+        type: 'text/csv',
+      });
+
+      form.set('syncFile', file);
+    });
+    const data = await got.post('https://httpbin.org/post', { body: form }).json();
+  } catch (error) {
+    return {
+      status: WEBHOOK.FAILURE,
+      message:
+        (error as Error).message ||
+        'Sync failed because data could not be sent to Meveto. Please contact our support if the issue persists.',
+    };
+  }
 
   return { status: WEBHOOK.SUCCESS };
 };

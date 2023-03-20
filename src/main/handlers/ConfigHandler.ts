@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { spawn } from 'child_process';
 import path from 'path';
 import nconf from 'nconf';
+import { __dirname } from '../utils';
 
 /**
  * Generates and returns an ID to be used as an identifier for this connector
@@ -76,7 +77,7 @@ export const createCryptoKeypair = (): Promise<void> =>
  */
 const storeKeys = (key: string): Promise<void> =>
   new Promise((resolve, reject) => {
-    const storageScript = path.join(__dirname, '../../scripts/storeCryptoKeys.ps1');
+    const storageScript = path.join(__dirname(import.meta.url), '../../scripts/storeCryptoKeys.ps1');
     const encodedPrivateKey = Buffer.from(key).toString('base64');
 
     // Execute the script.

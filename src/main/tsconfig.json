@@ -1,7 +1,9 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "../../tsconfig",
-  "compilerOptions": {
-    "module": "CommonJS"
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
   },
   "exclude": ["node_modules"]
 }
