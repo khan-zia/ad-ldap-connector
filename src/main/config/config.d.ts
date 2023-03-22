@@ -3,6 +3,7 @@ export interface Config {
   port: string;
   appID: null | string;
   publicKey: null | string;
+  webhookUrl: string;
   orgID: null | string;
   conString: null | string;
   baseDN: null | string;

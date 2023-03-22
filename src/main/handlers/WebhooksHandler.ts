@@ -18,38 +18,6 @@ type SendPayloadResponse = {
   message?: string;
 };
 
-type DispatchActions = { [K in SyncAction]: () => void };
-
-interface DispatchActionProps extends DispatchActions {
-  preparePayload: () => {
-    id: string;
-    type: SyncAction | 'deleteUsers' | 'deleteGroups';
-    checksum: string;
-    fileName: string;
-    signature: string;
-  };
-}
-
-const dispatchActions = {
-  // preparePayload: function () {
-  //   return {
-  //     id: nconf.get('appID'),
-  //   };
-  // },
-  // partialGroups: function () {
-  //   //
-  // },
-  // fullGroups: function () {
-  //   //
-  // },
-  // partialUsers: function () {
-  //   //
-  // },
-  // fullUsers: function () {
-  //   //
-  // },
-};
-
 /**
  * Sends the specified payload to Meveto for syncing.
  *
@@ -64,6 +32,8 @@ export const sendPayload = async (
   const programFilesPath = process.env.ProgramFiles || 'C:\\Program Files';
   const mevetoExportsPath = path.join(programFilesPath, 'Meveto', 'Exports');
   const filePath = path.join(mevetoExportsPath, fileName);
+  const genericError =
+    'Sync failed because data could not be sent to Meveto. Please contact our support if the issue persists.';
 
   try {
     await fs.promises.access(filePath, fs.constants.F_OK);
@@ -125,9 +95,10 @@ export const sendPayload = async (
   const finalPayload = { ...payload, signature };
 
   // Construct HTTP request.
+  const url = new URL(nconf.get('webhookUrl'));
   const httpOptions: https.RequestOptions = {
-    hostname: 'my.api.mockaroo.com',
-    path: '/api/extensions/ldap-connector/webhook?key=14e90980',
+    hostname: url.hostname,
+    path: url.pathname,
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -195,9 +166,7 @@ export const sendPayload = async (
   } catch (error) {
     return {
       status: WEBHOOK.FAILURE,
-      message:
-        (error as Error).message ||
-        'Sync failed because data could not be sent to Meveto. Please contact our support if the issue persists.',
+      message: (error as Error).message || genericError,
     };
   }
 
@@ -217,13 +186,25 @@ export const sendPayload = async (
 
       form.set('syncFile', file);
     });
-    const data = await got.post('https://httpbin.org/post', { body: form }).json();
+
+    const response: SendPayloadResponse = await got
+      .post(nconf.get('webhookUrl'), {
+        body: form,
+        retry: { limit: 0 },
+      })
+      .json();
+
+    if (response.status !== WEBHOOK.SUCCESS) {
+      return {
+        status: WEBHOOK.FAILURE,
+        message: response.message || genericError,
+      };
+    }
   } catch (error) {
+    console.log(error);
     return {
       status: WEBHOOK.FAILURE,
-      message:
-        (error as Error).message ||
-        'Sync failed because data could not be sent to Meveto. Please contact our support if the issue persists.',
+      message: (error as Error).message || genericError,
     };
   }
 
