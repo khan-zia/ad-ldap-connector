@@ -13,5 +13,6 @@
   },
   "editor.quickSuggestions": {
     "strings": true
-  }
+  },
+  "cSpell.words": ["Appender"]
 }

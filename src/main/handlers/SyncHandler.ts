@@ -1,6 +1,7 @@
 import nconf from 'nconf';
 import { SyncAction } from '../../renderer/pages/Home';
 import { currentADCompliantTimestamp, executePSScript } from '../utils';
+import log from '../utils/logger';
 import { sendPayload, WEBHOOK } from './WebhooksHandler';
 
 type SyncActions = { [K in SyncAction]: () => Promise<string | void> };
@@ -257,6 +258,7 @@ const syncActions: SyncActionProps = {
  */
 export const sync = (action: SyncAction): Promise<string | void> =>
   new Promise((resolve, reject) => {
+    log.debug('Attempting to perform sync operation: ' + action);
     syncActions[action]()
       .then(() => {
         resolve();
