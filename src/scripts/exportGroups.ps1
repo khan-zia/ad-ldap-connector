@@ -51,8 +51,15 @@ try {
     }
 
     # Attempt to identify any deleted groups. Valid only if a dateString has been specified.
+    $deletedObjects = $null
     if ($dateString) {
-        Get-ADObject -Server $server -Credential $credential -Filter {objectClass -eq "group" -and whenChanged -ge $dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid | Select-Object objectGuid | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\deleted_$fileName"
+        $deletedObjects = Get-ADObject -Server $server -Credential $credential -Filter {objectClass -eq "group" -and whenChanged -ge $dateString -and isDeleted -eq $true} -IncludeDeletedObjects -Properties whenChanged, isDeleted, objectGuid | Select-Object objectGuid
+        $deletedObjects | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\deleted_$fileName"
+    }
+
+    # If there have been no groups or deleted objects, let Node.js know that syncing is not needed.
+    if (!$groups -and !$deletedObjects) {
+        Write-Host "NoActionNeeded" -NoNewline
     }
 }
 catch {

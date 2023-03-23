@@ -67,7 +67,7 @@ export const isElevated = (): ProcessElevated => {
  */
 export const executePSScript = (
   name: string,
-  params?: Record<string, string>,
+  params?: Record<string, string | null>,
   encode = false
 ): Promise<string | null> => {
   let output: string | null = null;

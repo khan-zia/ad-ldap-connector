@@ -1,7 +1,7 @@
 import got from 'got';
 import nconf from 'nconf';
 
-type ContextObject = Record<string, string | number | Record<string, string | number>>;
+type ContextObject = Record<string, unknown>;
 
 type LogPayload = {
   timestamp: number;

@@ -9,6 +9,12 @@ interface SyncActionProps extends SyncActions {
   credentials: () => Promise<
     { server: string; username: string; password: string; searchBase: string | null } | string
   >;
+  executeAction: (
+    action: SyncAction,
+    scriptName: 'exportUsers.ps1' | 'exportGroups.ps1',
+    exportFileNamePrefix: 'groups' | 'users',
+    lastSync?: string
+  ) => Promise<string | void>;
 }
 
 const syncActions: SyncActionProps = {
@@ -37,24 +43,8 @@ const syncActions: SyncActionProps = {
     });
   },
 
-  partialGroups: function () {
+  executeAction: function (action, scriptName, exportFileNamePrefix, lastSync) {
     return new Promise((resolve, reject) => {
-      // If partial groups sync hasn't happened before, then attempt
-      // a full groups sync instead.
-      const lastSync = nconf.get('lastGroupsPartialSync');
-
-      if (!lastSync) {
-        this.fullGroups()
-          .then(() => {
-            // Set the last time for partial user sync.
-            nconf.set('lastGroupsPartialSync', currentADCompliantTimestamp());
-
-            resolve();
-          })
-          .catch((error) => reject(new Error(error.message)));
-        return;
-      }
-
       this.credentials()
         .then((creds) => {
           if (typeof creds !== 'object') {
@@ -63,12 +53,26 @@ const syncActions: SyncActionProps = {
 
           // Prepare name for the exported file.
           const unixTimestamp = Math.floor(Date.now() / 1000);
-          const fileName = `groups_${nconf.get('appID')}_${unixTimestamp}.csv`;
+          const fileName = `${exportFileNamePrefix}_${nconf.get('appID')}_${unixTimestamp}.csv`;
 
-          executePSScript('exportGroups.ps1', { ...creds, dateString: lastSync, fileName } as Record<string, string>)
-            .then(async () => {
+          const scriptParams: Record<string, string | null> = {
+            ...creds,
+            fileName,
+          };
+
+          if (lastSync) {
+            scriptParams.dateString = lastSync;
+          }
+
+          executePSScript(scriptName, scriptParams)
+            .then(async (result) => {
+              // Abort syncing if no syncing is needed.
+              if (result && result === 'NoActionNeeded') {
+                resolve();
+              }
+
               // Send the payload to Meveto
-              const webhook = await sendPayload('partialGroups', fileName);
+              const webhook = await sendPayload(action, fileName);
 
               // Handle if the webhook failed.
               if (webhook.status === WEBHOOK.FAILURE) {
@@ -82,9 +86,6 @@ const syncActions: SyncActionProps = {
                 return;
               }
 
-              // Set the last time of partial user sync.
-              nconf.set('lastGroupsPartialSync', currentADCompliantTimestamp());
-
               resolve();
             })
             .catch((error) => {
@@ -94,154 +95,74 @@ const syncActions: SyncActionProps = {
         .catch((error) => {
           reject(new Error(error.message));
         });
+    });
+  },
+
+  partialGroups: function () {
+    return new Promise((resolve, reject) => {
+      const lastSync = nconf.get('lastGroupsPartialSync');
+      let execute;
+
+      // If partial groups sync hasn't happened before, then attempt a full groups sync instead.
+      if (!lastSync) {
+        execute = this.fullGroups();
+      } else {
+        execute = this.executeAction('partialGroups', 'exportGroups.ps1', 'groups', lastSync);
+      }
+
+      execute
+        .then(() => {
+          // Set the last time for partial user sync.
+          nconf.set('lastGroupsPartialSync', currentADCompliantTimestamp());
+          resolve();
+        })
+        .catch((error) => reject(new Error(error.message)));
     });
   },
 
   fullGroups: function () {
     return new Promise((resolve, reject) => {
-      this.credentials()
-        .then((creds) => {
-          if (typeof creds !== 'object') {
-            return;
-          }
-
-          // Prepare name for the exported file.
-          const unixTimestamp = Math.floor(Date.now() / 1000);
-          const fileName = `groups_${nconf.get('appID')}_${unixTimestamp}.csv`;
-
-          executePSScript('exportGroups.ps1', { ...creds, fileName } as Record<string, string>)
-            .then(async () => {
-              // Send the payload to Meveto
-              const webhook = await sendPayload('fullGroups', fileName);
-
-              // Handle if the webhook failed.
-              if (webhook.status === WEBHOOK.FAILURE) {
-                reject(
-                  new Error(
-                    webhook.message ||
-                      'There was a problem while trying to send data to Meveto. Contact our support if the issue persists.'
-                  )
-                );
-
-                return;
-              }
-
-              // Set the last time of full user sync.
-              nconf.set('lastGroupsFullSync', currentADCompliantTimestamp());
-
-              resolve();
-            })
-            .catch((error) => {
-              reject(new Error(error.message));
-            });
+      this.executeAction('fullGroups', 'exportGroups.ps1', 'groups')
+        .then(() => {
+          // Set the last time for partial user sync.
+          nconf.set('lastGroupsFullSync', currentADCompliantTimestamp());
+          resolve();
         })
-        .catch((error) => {
-          reject(new Error(error.message));
-        });
+        .catch((error) => reject(new Error(error.message)));
     });
   },
 
   partialUsers: function () {
     return new Promise((resolve, reject) => {
-      // If partial users sync hasn't happened before, then attempt
-      // a full users sync instead.
       const lastSync = nconf.get('lastUsersPartialSync');
+      let execute;
 
+      // If partial users sync hasn't happened before, then attempt a full users sync instead.
       if (!lastSync) {
-        this.fullUsers()
-          .then(() => {
-            // Set the last time for partial user sync.
-            nconf.set('lastUsersPartialSync', currentADCompliantTimestamp());
-
-            resolve();
-          })
-          .catch((error) => reject(new Error(error.message)));
-        return;
+        execute = this.fullUsers();
+      } else {
+        execute = this.executeAction('partialUsers', 'exportUsers.ps1', 'users', lastSync);
       }
 
-      this.credentials()
-        .then((creds) => {
-          if (typeof creds !== 'object') {
-            return;
-          }
-
-          // Prepare name for the exported file.
-          const unixTimestamp = Math.floor(Date.now() / 1000);
-          const fileName = `users_${nconf.get('appID')}_${unixTimestamp}.csv`;
-
-          executePSScript('exportUsers.ps1', { ...creds, dateString: lastSync, fileName } as Record<string, string>)
-            .then(async () => {
-              // Send the payload to Meveto
-              const webhook = await sendPayload('partialUsers', fileName);
-
-              // Handle if the webhook failed.
-              if (webhook.status === WEBHOOK.FAILURE) {
-                reject(
-                  new Error(
-                    webhook.message ||
-                      'There was a problem while trying to send data to Meveto. Contact our support if the issue persists.'
-                  )
-                );
-
-                return;
-              }
-
-              // Set the last time of partial user sync.
-              nconf.set('lastUsersPartialSync', currentADCompliantTimestamp());
-
-              resolve();
-            })
-            .catch((error) => {
-              reject(new Error(error.message));
-            });
+      execute
+        .then(() => {
+          // Set the last time for partial user sync.
+          nconf.set('lastUsersPartialSync', currentADCompliantTimestamp());
+          resolve();
         })
-        .catch((error) => {
-          reject(new Error(error.message));
-        });
+        .catch((error) => reject(new Error(error.message)));
     });
   },
 
   fullUsers: function () {
     return new Promise((resolve, reject) => {
-      this.credentials()
-        .then((creds) => {
-          if (typeof creds !== 'object') {
-            return;
-          }
-
-          // Prepare name for the exported file.
-          const unixTimestamp = Math.floor(Date.now() / 1000);
-          const fileName = `users_${nconf.get('appID')}_${unixTimestamp}.csv`;
-
-          executePSScript('exportUsers.ps1', { ...creds, fileName } as Record<string, string>)
-            .then(async () => {
-              // Send the payload to Meveto
-              const webhook = await sendPayload('fullUsers', fileName);
-
-              // Handle if the webhook failed.
-              if (webhook.status === WEBHOOK.FAILURE) {
-                reject(
-                  new Error(
-                    webhook.message ||
-                      'There was a problem while trying to send data to Meveto. Contact our support if the issue persists.'
-                  )
-                );
-
-                return;
-              }
-
-              // Set the last time of full user sync.
-              nconf.set('lastUsersFullSync', currentADCompliantTimestamp());
-
-              resolve();
-            })
-            .catch((error) => {
-              reject(new Error(error.message));
-            });
+      this.executeAction('fullUsers', 'exportUsers.ps1', 'users')
+        .then(() => {
+          // Set the last time for partial user sync.
+          nconf.set('lastUsersFullSync', currentADCompliantTimestamp());
+          resolve();
         })
-        .catch((error) => {
-          reject(new Error(error.message));
-        });
+        .catch((error) => reject(new Error(error.message)));
     });
   },
 };
@@ -258,7 +179,8 @@ const syncActions: SyncActionProps = {
  */
 export const sync = (action: SyncAction): Promise<string | void> =>
   new Promise((resolve, reject) => {
-    log.debug('Attempting to perform sync operation: ' + action);
+    log.debug(`Attempting to perform syncing operation: "${action}"`);
+
     syncActions[action]()
       .then(() => {
         resolve();

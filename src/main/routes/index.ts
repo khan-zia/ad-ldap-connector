@@ -8,6 +8,7 @@ import { storeCredentials, testLDAPConnection } from '../handlers/CredsHandler';
 import { sync as syncHandler } from '../handlers/SyncHandler';
 import { isElevated } from '../utils';
 import { LastSyncResponse, SyncAction } from '../../renderer/pages/Home';
+import log from '../utils/logger';
 
 // Initialize the router.
 const router = express.Router();
@@ -17,12 +18,18 @@ const router = express.Router();
  * executed by an Admin or root user.
  */
 const isAdmin: RequestHandler = async (_, res: Response<Record<string, unknown>>, next) => {
+  log.debug('Determining if the current user is an admin or has privileged access.');
+
   if (!isElevated()) {
+    log.debug('The current user is NOT an admin.');
+
     return res.json({
       success: false,
       message: 'Only Administrator users can configure the Meveto AD/LDAP Connector.',
     });
   }
+
+  log.debug('The current user is an admin.');
 
   next();
 };
@@ -33,8 +40,13 @@ const isAdmin: RequestHandler = async (_, res: Response<Record<string, unknown>>
  * It returns the public key and the ID in response.
  */
 const configure: RequestHandler = async (_, res: Response<Record<string, unknown>>) => {
+  log.debug('Attempting to configure the connector.');
+
   // App must not be already configured.
-  if (nconf.get('state') !== 'pendingConfig') {
+  const state: Config['state'] = nconf.get('state');
+  if (state !== 'pendingConfig') {
+    log.debug(`Connector can not be configured because the connector's state is: "${state}"`);
+
     return res.json({
       success: false,
       message: 'The Connector appears to be configured already. Please contact Meveto if you are facing any issues.',
@@ -45,19 +57,35 @@ const configure: RequestHandler = async (_, res: Response<Record<string, unknown
     // Create a new ID for the app.
     createNewID();
 
-    // Create crypto keypair. This encrypts and saves the private key using PowerShell.
+    log.debug('New ID has been generated for the connector.');
+
+    // Create crypto key pair. This encrypts and saves the private key using PowerShell.
     await createCryptoKeypair();
+
+    log.debug('New key pair has been generated and processed successfully.');
 
     // Update app's state.
     nconf.set('state', 'pendingCredentials');
+
+    log.debug('Connector\'s state has been set to "pendingCredentials" on the config object.');
 
     // Finally, save configuration values. This will save appID and publicKey in the
     // config.json file.
     nconf.save((err: Error | null) => {
       if (err) {
+        log.error(
+          'Failed to complete configuration because config object could not be updated. An error message is included in the context.',
+          {
+            error: err.message,
+          }
+        );
+
         return res.json({ success: false, message: 'There was a problem while trying to save configuration values.' });
       }
     });
+
+    log.debug("Connector's configuration has been successfully completed.");
+    log.flush();
 
     // Return success response along with the app's ID and public key.
     return res.json({
@@ -67,6 +95,12 @@ const configure: RequestHandler = async (_, res: Response<Record<string, unknown
       state: nconf.get('state'),
     });
   } catch (error) {
+    log.error('Failed to complete configuration. An error message is included in the context.', {
+      error: (error as Error).message,
+    });
+
+    log.flush();
+
     return res.json({ success: false, message: (error as Error).message });
   }
 };
@@ -75,17 +109,29 @@ const saveCredentials: RequestHandler = async (
   req: Request<object, object, SaveCredsRequestBody>,
   res: Response<Record<string, unknown>>
 ) => {
+  log.debug('Attempting to save LDAP credentials.');
+
   // Input validation
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    log.debug(
+      'Saving LDAP credentials failed because of input validation errors. Errors have been included in the context.',
+      {
+        errors: errors.array(),
+      }
+    );
+
     return res.status(400).json({ errors: errors.array() });
   }
 
-  try {
-    const { orgID, ...ldapCreds } = req.body;
+  const { orgID, ...ldapCreds } = req.body;
 
+  try {
     await testLDAPConnection(ldapCreds);
+    log.debug('LDAP credentials have been successfully validated.');
+
     await storeCredentials(ldapCreds);
+    log.debug('LDAP credentials have been prepared and set on the config object.');
 
     // Store Meveto org ID on the config.
     nconf.set('orgID', orgID);
@@ -93,17 +139,43 @@ const saveCredentials: RequestHandler = async (
     // Update the app's state.
     nconf.set('state', 'ready');
 
+    log.debug('LDAP credentials have been processed. The connector\'s state has been set to "ready".');
+
     // Save config.
     nconf.save((err: Error | null) => {
       if (err) {
+        log.error(
+          'Failed to store LDAP credentials on the config object. An error message is included in the context.',
+          {
+            error: err.message,
+          }
+        );
+
         return res.json({ success: false, message: 'There was a problem while trying to save credentials.' });
       }
     });
+
+    log.debug('LDAP credentials have been successfully validated and stored.');
+    log.flush();
 
     return res.json({
       success: true,
     });
   } catch (error) {
+    log.error(
+      'Failed to store LDAP credentials. An error message along with the supplied input have been sent on the context object.',
+      {
+        error: (error as Error).message,
+        userInput: {
+          connectionString: ldapCreds.conString,
+          baseDN: ldapCreds.baseDN,
+          username: ldapCreds.username,
+          password: 'Omitted for security. An incorrect password could have been the reason for failure.',
+        },
+      }
+    );
+    log.flush();
+
     return res.json({ success: false, message: (error as Error).message });
   }
 };
@@ -112,17 +184,17 @@ const sync: RequestHandler = async (
   req: Request<object, object, { syncAction: SyncAction }>,
   res: Response<Record<string, unknown>>
 ) => {
-  try {
-    const { syncAction } = req.body;
+  const { syncAction } = req.body;
 
+  try {
     await syncHandler(syncAction);
 
     // Save config.
-    // nconf.save((err: Error | null) => {
-    //   if (err) {
-    //     return res.json({ success: false, message: '' });
-    //   }
-    // });
+    nconf.save((err: Error | null) => {
+      if (err) {
+        return res.json({ success: false, message: '' });
+      }
+    });
 
     return res.json({
       success: true,
@@ -171,7 +243,7 @@ router.post(
   [
     check('orgID')
       .exists({ checkNull: true })
-      .withMessage('Please prvoide your Meveto organization ID.')
+      .withMessage('Please provide your Meveto organization ID.')
       .matches(/^(\d{5}-){2}\d{5}$/)
       .withMessage(
         'Your Meveto organization ID is made of 3 sets of 5 digits separated by the dash symbol e.g. 12345-12345-12345'
