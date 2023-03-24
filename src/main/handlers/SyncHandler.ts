@@ -20,6 +20,8 @@ interface SyncActionProps extends SyncActions {
 const syncActions: SyncActionProps = {
   credentials: function () {
     return new Promise((resolve, reject) => {
+      log.debug('Collecting LDAP credentials.');
+
       // Decrypt the password.
       executePSScript('decrypt.ps1', { value: nconf.get('password') })
         .then((decryptedPassword) => {
@@ -35,9 +37,18 @@ const syncActions: SyncActionProps = {
             return;
           }
 
+          log.error('LDAP password could not be decrypted. The PowerShell script did not return any result.', {
+            hint: 'It is possible that the password was initially encrypted by a different system user and the connector is now being ran by a different user.',
+          });
+
           reject(new Error('AD/LDAP credentials could not be retrieved.'));
         })
         .catch((error) => {
+          log.error('LDAP password could not be decrypted. The PowerShell script resulted in an error.', {
+            error: (error as Error).message,
+            hint: 'It is possible that the password was initially encrypted by a different system user and the connector is now being ran by a different user.',
+          });
+
           reject(new Error(`AD/LDAP credentials could not be retrieved. ${(error as Error).message}`));
         });
     });
@@ -48,8 +59,14 @@ const syncActions: SyncActionProps = {
       this.credentials()
         .then((creds) => {
           if (typeof creds !== 'object') {
+            log.debug('Collected LDAP credentials should have been an object but received a different value.', {
+              received: creds,
+            });
+
             return;
           }
+
+          log.debug('LDAP credentials collected.');
 
           // Prepare name for the exported file.
           const unixTimestamp = Math.floor(Date.now() / 1000);
@@ -64,12 +81,23 @@ const syncActions: SyncActionProps = {
             scriptParams.dateString = lastSync;
           }
 
+          log.debug('Attempting to export required data.');
+
           executePSScript(scriptName, scriptParams)
             .then(async (result) => {
               // Abort syncing if no syncing is needed.
               if (result && result === 'NoActionNeeded') {
+                log.debug('New data is not available yet. Syncing completed without exporting any data.');
                 resolve();
               }
+
+              log.debug(
+                'Required data successfully exported to the specified location with the following names. Note that the "deleted" version of the data may not have actually been exported if there were no deleted objects to sync.',
+                {
+                  exportedFileName: fileName,
+                  deletedObjectsFileNameIfAny: `deleted_${fileName}`,
+                }
+              );
 
               // Send the payload to Meveto
               const webhook = await sendPayload(action, fileName);
@@ -89,6 +117,10 @@ const syncActions: SyncActionProps = {
               resolve();
             })
             .catch((error) => {
+              log.error('The PowerShell script to export the required data resulted in an error.', {
+                error: error.message,
+              });
+
               reject(new Error(error.message));
             });
         })

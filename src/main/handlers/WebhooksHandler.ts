@@ -7,6 +7,7 @@ import { File, FormData } from 'formdata-node';
 import got from 'got';
 import { SyncAction } from '../../renderer/pages/Home';
 import { executePSScript } from '../utils';
+import log from '../utils/logger';
 
 export const WEBHOOK = {
   SUCCESS: 'success',
@@ -32,12 +33,24 @@ export const sendPayload = async (
   const programFilesPath = process.env.ProgramFiles || 'C:\\Program Files';
   const mevetoExportsPath = path.join(programFilesPath, 'Meveto', 'Exports');
   const filePath = path.join(mevetoExportsPath, fileName);
+  const deletedFilePath = path.join(mevetoExportsPath, `deleted_${fileName}`);
   const genericError =
     'Sync failed because data could not be sent to Meveto. Please contact our support if the issue persists.';
 
+  log.debug('Attempting to send exported data to Meveto.', {
+    payloadType,
+    exportedDataLocation: filePath,
+    exportedDeletedObjectsLocationIfAny: deletedFilePath,
+  });
+
   try {
+    log.debug('Testing the specified files to ensure they exist and are accessible.');
     await fs.promises.access(filePath, fs.constants.F_OK);
   } catch (error) {
+    log.error(
+      'The specified files either do not exist or are not accessible due to file system permissions for the current user.'
+    );
+
     return { status: WEBHOOK.FAILURE, message: `Exported data could not be found at ${filePath}` };
   }
 
@@ -45,16 +58,23 @@ export const sendPayload = async (
   let checksum: string | null = null;
 
   try {
+    log.debug('Producing a checksum of the specified file.');
     const fileContent = await fs.promises.readFile(filePath);
     const hash = createHash('sha256');
     hash.update(fileContent);
     checksum = hash.digest('base64');
   } catch (error) {
+    log.error('There was either an error reading content of the file or when attempting to produce the checksum.', {
+      error: (error as Error).message,
+    });
+
     return {
       status: WEBHOOK.FAILURE,
       message: `Exported data at ${filePath} could not be accessed for further processing.`,
     };
   }
+
+  log.debug("Preparing and signing payload for Meveto using the connector's private key.");
 
   // Prepare payload for signing.
   const payload = {
@@ -75,17 +95,25 @@ export const sendPayload = async (
     key = await executePSScript('getKey.ps1');
 
     if (!key) {
+      log.error('The PowerShell script to retrieve private key resulted in an empty response.');
+
       return {
         status: WEBHOOK.FAILURE,
         message: "There was a problem while trying to retrieve the Connector's private key.",
       };
     }
   } catch (error) {
+    log.error('The PowerShell script to retrieve private key of the connector resulted in an error.', {
+      error: (error as Error).message,
+    });
+
     return {
       status: WEBHOOK.FAILURE,
       message: "There was a problem while trying to retrieve the Connector's private key.",
     };
   }
+
+  log.debug('Private key of the connector has been retrieved for signing.');
 
   // Sign the sortedPayload after converting it to a string.
   const payloadString = JSON.stringify(sortedPayload);
@@ -93,6 +121,8 @@ export const sendPayload = async (
 
   // Add signature to the final payload.
   const finalPayload = { ...payload, signature };
+
+  log.debug('Payload has been finalized and signed. Payload ready for transport.');
 
   // Construct HTTP request.
   const url = new URL(nconf.get('webhookUrl'));
@@ -107,6 +137,8 @@ export const sendPayload = async (
 
   // Process the HTTP request.
   try {
+    log.debug('Attempting to send the payload to Meveto using the specified webhook URL.');
+
     await new Promise<SendPayloadResponse>((resolve, reject) => {
       const req = https.request(httpOptions, (res) => {
         // Collect response data from the buffer.
@@ -164,20 +196,30 @@ export const sendPayload = async (
       req.end();
     });
   } catch (error) {
+    log.error(
+      'Payload could not be sent to Meveto. Transport attempt resulted in an error that could be either due to a problem at the Meveto backend or the HTTP request from the connector. If the Meveto backend responded with an HTTP status other than the 2xx, that will also result in this message.',
+      {
+        error: (error as Error).message,
+      }
+    );
+
     return {
       status: WEBHOOK.FAILURE,
       message: (error as Error).message || genericError,
     };
   }
 
+  log.debug('Signed payload has been successfully sent to Meveto. Meveto acknowledged with a 2xx HTTP response.');
+
   // After the initial HTTP request is successfully completed, upload the CSV file to Meveto.
   try {
+    log.debug('Attempting to upload the actual file that contains syncing data to Meveto.');
+
     const form = new FormData();
 
     fs.readFile(filePath, (error, data) => {
       if (error) {
-        console.error(`Error: ${error}`);
-        return;
+        throw new Error(`Failed to read content of the syncing file. ${error.message}`);
       }
 
       const file = new File(data, fileName, {
@@ -201,7 +243,6 @@ export const sendPayload = async (
       };
     }
   } catch (error) {
-    console.log(error);
     return {
       status: WEBHOOK.FAILURE,
       message: (error as Error).message || genericError,
