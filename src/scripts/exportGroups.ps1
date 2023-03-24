@@ -40,13 +40,12 @@ try {
     }
 
     $fileDirectory = "$env:ProgramFiles\Meveto\Exports"
+    If (!(Test-Path $fileDirectory)) {
+        # Create the "Meveto" folder first if it doesn't exist.
+        New-Item -ItemType Directory -Path $fileDirectory | Out-Null
+    }
 
     if ($groups) {
-        If (!(Test-Path $fileDirectory)) {
-            # Create the "Meveto" folder first if it doesn't exist.
-            New-Item -ItemType Directory -Path $fileDirectory | Out-Null
-        }
-
         $groups | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\$fileName"
     }
 
@@ -57,8 +56,13 @@ try {
         $deletedObjects | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Set-Content "$fileDirectory\deleted_$fileName"
     }
 
-    # If there have been no groups or deleted objects, let Node.js know that syncing is not needed.
-    if (!$groups -and !$deletedObjects) {
+    if ($groups -and $deletedObjects) {
+        Write-Host "SyncDelete" -NoNewline
+    } elseif ($groups -and !$deletedObjects) {
+        Write-Host "Sync" -NoNewline
+    } elseif (!$groups -and $deletedObjects) {
+        Write-Host "Delete" -NoNewline
+    } else {
         Write-Host "NoActionNeeded" -NoNewline
     }
 }

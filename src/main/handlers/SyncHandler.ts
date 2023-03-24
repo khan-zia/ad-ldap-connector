@@ -17,6 +17,13 @@ interface SyncActionProps extends SyncActions {
   ) => Promise<string | void>;
 }
 
+const EXPORT_RESULT = {
+  SYNC_DELETE: 'SyncDelete',
+  SYNC: 'Sync',
+  DELETE: 'Delete',
+  NO_ACTION: 'NoActionNeeded',
+};
+
 const syncActions: SyncActionProps = {
   credentials: function () {
     return new Promise((resolve, reject) => {
@@ -86,7 +93,7 @@ const syncActions: SyncActionProps = {
           executePSScript(scriptName, scriptParams)
             .then(async (result) => {
               // Abort syncing if no syncing is needed.
-              if (result && result === 'NoActionNeeded') {
+              if (result && result === EXPORT_RESULT.NO_ACTION) {
                 log.debug('New data is not available yet. Syncing completed without exporting any data.');
                 resolve();
                 return;
@@ -100,26 +107,56 @@ const syncActions: SyncActionProps = {
                 }
               );
 
-              // Send the payload to Meveto
-              const webhook = await sendPayload(action, fileName);
+              try {
+                let syncWebhook,
+                  deletionWebhook = null;
 
-              // Handle if the webhook failed.
-              if (webhook.status === WEBHOOK.FAILURE) {
-                reject(
-                  new Error(
-                    webhook.message ||
-                      'There was a problem while trying to send data to Meveto. Contact our support if the issue persists.'
-                  )
+                switch (result) {
+                  case EXPORT_RESULT.SYNC_DELETE:
+                    syncWebhook = await sendPayload(action, fileName);
+                    deletionWebhook = await sendPayload(
+                      `delete${action.replace('full', '').replace('partial', '') as 'Groups' | 'Users'}`,
+                      `deleted_${fileName}`
+                    );
+                    break;
+                  case EXPORT_RESULT.SYNC:
+                    syncWebhook = await sendPayload(action, fileName);
+                    break;
+                  case EXPORT_RESULT.DELETE:
+                    deletionWebhook = await sendPayload(
+                      `delete${action.replace('full', '').replace('partial', '') as 'Groups' | 'Users'}`,
+                      `deleted_${fileName}`
+                    );
+                    break;
+                  default:
+                    reject(new Error(`Data export operation returned an unexpected response: "${result}"`));
+                    break;
+                }
+
+                // Handle if webhooks failed.
+                if (
+                  (syncWebhook && syncWebhook.status === WEBHOOK.FAILURE) ||
+                  (deletionWebhook && deletionWebhook.status === WEBHOOK.FAILURE)
+                ) {
+                  reject(
+                    new Error(
+                      syncWebhook?.message ||
+                        deletionWebhook?.message ||
+                        'There was a problem while trying to send data to Meveto. Contact our support if the issue persists.'
+                    )
+                  );
+
+                  return;
+                }
+
+                log.debug(
+                  'Syncing payload and syncing files have been successfully sent to Meveto for further processing.'
                 );
 
-                return;
+                resolve();
+              } catch (error) {
+                reject(new Error((error as Error).message));
               }
-
-              log.debug(
-                'Syncing payload and syncing files have been successfully sent to Meveto for further processing.'
-              );
-
-              resolve();
             })
             .catch((error) => {
               log.error('The PowerShell script to export the required data resulted in an error.', {

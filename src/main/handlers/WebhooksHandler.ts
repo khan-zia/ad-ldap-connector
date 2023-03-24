@@ -3,7 +3,7 @@ import path from 'path';
 import { createHash, createPrivateKey, sign } from 'crypto';
 import https from 'https';
 import nconf from 'nconf';
-import { File, FormData } from 'formdata-node';
+import { FormData } from 'formdata-node';
 import { fileFromPath } from 'formdata-node/file-from-path';
 import got from 'got';
 import { SyncAction } from '../../renderer/pages/Home';
@@ -21,7 +21,8 @@ type SendPayloadResponse = {
 };
 
 /**
- * Sends the specified payload to Meveto for syncing.
+ * Sends the specified payload to Meveto for syncing. If a file is uploaded to Meveto, it
+ * will be deleted after successful upload.
  *
  * @param payloadType Type of the payload is the same as the action being performed.
  * @param fileName Name of the exported file by PowerShell that should be sent to Meveto.
@@ -43,8 +44,8 @@ export const sendPayload = async (
   });
 
   try {
-    log.debug('Testing the specified files to ensure they exist and are accessible.');
-    await fs.promises.access(filePath, fs.constants.R_OK);
+    log.debug('Testing the specified file to ensure it exists and is readable.');
+    await fs.promises.access(filePath, fs.constants.F_OK | fs.constants.R_OK);
   } catch (error) {
     log.error(
       'The specified files either do not exist or are not accessible due to file system permissions for the current user.'
@@ -245,6 +246,23 @@ export const sendPayload = async (
       message: (error as Error).message || genericError,
     };
   }
+
+  // After the file has been successfully sent to Meveto, delete it.
+  log.debug('Attempting to delete the file as it is no longer needed.');
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      log.error(
+        'File could not be deleted. This error was not shown to the user because the actual syncing has been completed.',
+        {
+          error: err.message,
+        }
+      );
+
+      return;
+    }
+
+    log.debug('File has been successfully deleted.');
+  });
 
   return { status: WEBHOOK.SUCCESS };
 };
