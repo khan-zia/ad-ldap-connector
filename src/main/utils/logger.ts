@@ -4,6 +4,7 @@ import nconf from 'nconf';
 type ContextObject = Record<string, unknown>;
 
 type LogPayload = {
+  connectorID?: string;
   timestamp: number;
   message: string;
   levelName: 'debug' | 'error';
@@ -97,9 +98,9 @@ const log: LogProps = {
     // attach it to the log message.
     if (id) {
       this.pushToQueue({
+        connectorID: id,
         ...preparedPayload,
         context: {
-          connectorID: id,
           ...passedContext,
         },
       });
@@ -109,9 +110,9 @@ const log: LogProps = {
 
     // Else, let the log message be descriptive about it. Add any config data if available.
     this.pushToQueue({
+      connectorID: 'Unavailable. Connector is not configured.',
       ...preparedPayload,
       context: {
-        connectorID: "Unavailable. Connector is not configured. Connector's config is attached.",
         connectorState: nconf.get('state'),
         ...passedContext,
       },

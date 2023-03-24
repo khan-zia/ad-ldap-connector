@@ -189,7 +189,7 @@ const sync: RequestHandler = async (
   try {
     await syncHandler(syncAction);
 
-    log.debug('Syncing operation successfully completed. This means syncing data bas been sent to Meveto.');
+    log.debug('Syncing operation successfully completed. This means syncing data bas been sent to Meveto if any.');
 
     // Save config.
     nconf.save((err: Error | null) => {

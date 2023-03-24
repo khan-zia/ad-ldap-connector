@@ -43,7 +43,7 @@ export const sendPayload = async (
 
   try {
     log.debug('Testing the specified files to ensure they exist and are accessible.');
-    await fs.promises.access(filePath, fs.constants.F_OK);
+    await fs.promises.access(filePath, fs.constants.R_OK);
   } catch (error) {
     log.error(
       'The specified files either do not exist or are not accessible due to file system permissions for the current user.'

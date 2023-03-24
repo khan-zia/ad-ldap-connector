@@ -89,6 +89,7 @@ const syncActions: SyncActionProps = {
               if (result && result === 'NoActionNeeded') {
                 log.debug('New data is not available yet. Syncing completed without exporting any data.');
                 resolve();
+                return;
               }
 
               log.debug(
