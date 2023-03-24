@@ -4,6 +4,7 @@ import { createHash, createPrivateKey, sign } from 'crypto';
 import https from 'https';
 import nconf from 'nconf';
 import { File, FormData } from 'formdata-node';
+import { fileFromPath } from 'formdata-node/file-from-path';
 import got from 'got';
 import { SyncAction } from '../../renderer/pages/Home';
 import { executePSScript } from '../utils';
@@ -214,18 +215,7 @@ export const sendPayload = async (
     log.debug('Attempting to upload the actual file that contains syncing data to Meveto.');
 
     const form = new FormData();
-
-    fs.readFile(filePath, (error, data) => {
-      if (error) {
-        throw new Error(`Failed to read content of the syncing file. ${error.message}`);
-      }
-
-      const file = new File(data, fileName, {
-        type: 'text/csv',
-      });
-
-      form.set('syncFile', file);
-    });
+    form.set('syncFile', fileFromPath(filePath));
 
     const response: SendPayloadResponse = await got
       .post(nconf.get('webhookUrl'), {
