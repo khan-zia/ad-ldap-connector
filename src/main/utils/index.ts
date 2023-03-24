@@ -124,7 +124,7 @@ export const executePSScript = (
     });
 
     ps.on('exit', (code) => {
-      // Must exit with code 0 to be considered sucessful.
+      // Must exit with code 0 to be considered successful.
       if (code !== 0) {
         const err = errorOutput || output;
         reject(

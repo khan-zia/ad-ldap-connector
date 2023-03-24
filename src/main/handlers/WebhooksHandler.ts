@@ -33,14 +33,12 @@ export const sendPayload = async (
   const programFilesPath = process.env.ProgramFiles || 'C:\\Program Files';
   const mevetoExportsPath = path.join(programFilesPath, 'Meveto', 'Exports');
   const filePath = path.join(mevetoExportsPath, fileName);
-  const deletedFilePath = path.join(mevetoExportsPath, `deleted_${fileName}`);
   const genericError =
     'Sync failed because data could not be sent to Meveto. Please contact our support if the issue persists.';
 
   log.debug('Attempting to send exported data to Meveto.', {
     payloadType,
     exportedDataLocation: filePath,
-    exportedDeletedObjectsLocationIfAny: deletedFilePath,
   });
 
   try {
@@ -237,12 +235,21 @@ export const sendPayload = async (
       .json();
 
     if (response.status !== WEBHOOK.SUCCESS) {
+      log.error('Failed to upload the syncing file to Meveto because Meveto returned a status indicating failure.', {
+        responseStatus: response.status,
+        failureMessageFromMeveto: response.message,
+      });
+
       return {
         status: WEBHOOK.FAILURE,
         message: response.message || genericError,
       };
     }
   } catch (error) {
+    log.error('The syncing file could not be uploaded to Meveto.', {
+      error: (error as Error).message,
+    });
+
     return {
       status: WEBHOOK.FAILURE,
       message: (error as Error).message || genericError,

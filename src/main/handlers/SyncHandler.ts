@@ -114,6 +114,10 @@ const syncActions: SyncActionProps = {
                 return;
               }
 
+              log.debug(
+                'Syncing payload and syncing files have been successfully sent to Meveto for further processing.'
+              );
+
               resolve();
             })
             .catch((error) => {
@@ -217,5 +221,8 @@ export const sync = (action: SyncAction): Promise<string | void> =>
       .then(() => {
         resolve();
       })
-      .catch((error) => reject(new Error(error.message)));
+      .catch((error) => {
+        log.error(`Syncing operation failed. ${error.message}`);
+        reject(new Error(error.message));
+      });
   });

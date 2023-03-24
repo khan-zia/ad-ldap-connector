@@ -189,17 +189,33 @@ const sync: RequestHandler = async (
   try {
     await syncHandler(syncAction);
 
+    log.debug('Syncing operation successfully completed. This means syncing data bas been sent to Meveto.');
+
     // Save config.
     nconf.save((err: Error | null) => {
       if (err) {
-        return res.json({ success: false, message: '' });
+        log.error("An error was encountered when trying to update the Connector's config after syncing.", {
+          error: err.message,
+        });
+
+        return res.json({
+          success: false,
+          message: `Error when finalizing syncing operation: "${err.message}". Contact our support if the issue persists.`,
+        });
       }
     });
+
+    log.debug("Connector's config has been updated after syncing. Operation completed.");
+    log.flush();
 
     return res.json({
       success: true,
     });
   } catch (error) {
+    log.error('Syncing operation failed.', {
+      error: (error as Error).message,
+    });
+
     return res.json({ success: false, message: (error as Error).message });
   }
 };
