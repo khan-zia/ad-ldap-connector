@@ -216,7 +216,7 @@ export const sendPayload = async (
     log.debug('Attempting to upload the actual file that contains syncing data to Meveto.');
 
     const form = new FormData();
-    form.set('syncFile', fileFromPath(filePath));
+    form.set(fileName, fileFromPath(filePath));
 
     const response: SendPayloadResponse = await got
       .post(nconf.get('webhookUrl'), {
