@@ -12,7 +12,7 @@ type SaveCredsResponse = {
   errors?: { msg: string }[];
 };
 
-type InputFields = 'orgID' | 'conString' | 'baseDN' | 'username' | 'password';
+type InputFields = 'conString' | 'baseDN' | 'username' | 'password';
 
 export type SaveCredsRequestBody = {
   [K in InputFields]: string;
@@ -26,7 +26,6 @@ const flashError = (message?: null | string): void => {
 
 const GetCredentials = (): JSX.Element => {
   const [saving, setSaving] = useState<boolean>(false);
-  const [orgID, setOrgID] = useState<string | null>(null);
   const [conString, setConString] = useState<string | null>(null);
   const [baseDN, setBaseDN] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
@@ -54,19 +53,9 @@ const GetCredentials = (): JSX.Element => {
 
   /** Validates user's input. */
   const validate = (): boolean => {
-    let orgIDErr,
-      conStringErr,
+    let conStringErr,
       usernameErr,
       passwordErr = null;
-
-    // Validate orgID
-    if (!orgID) {
-      orgIDErr = 'Specify your Meveto Organization ID.';
-    }
-
-    if (orgID && orgID.length < 17) {
-      orgIDErr = 'Your Meveto Organization ID is at least 17 characters that looks like "12345-12345-12345".';
-    }
 
     // Validate conString
     if (!conString) {
@@ -85,14 +74,13 @@ const GetCredentials = (): JSX.Element => {
 
     // Set errors if any.
     setErrors({
-      orgID: orgIDErr,
       conString: conStringErr,
       username: usernameErr,
       password: passwordErr,
     });
 
     // If there were any errors in this check, return false.
-    if (orgIDErr || conStringErr || usernameErr || passwordErr) {
+    if (conStringErr || usernameErr || passwordErr) {
       return false;
     }
 
@@ -114,7 +102,6 @@ const GetCredentials = (): JSX.Element => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        orgID,
         conString,
         baseDN,
         username,
@@ -189,14 +176,6 @@ const GetCredentials = (): JSX.Element => {
           The password will be encrypted and stored on this device. It will never be transmitted over any network.
         </strong>
       </div>
-      <LabelledInput
-        label='Meveto Organization ID'
-        placeholder='e.g. 12345-12345-12345'
-        value={orgID}
-        setValue={setOrgID}
-        error={!!errors?.orgID}
-        helperText={errors?.orgID}
-      />
       <LabelledInput
         label='LDAP Connection String'
         placeholder='e.g. LDAP://your-dc.your-domain.com'

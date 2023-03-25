@@ -4,7 +4,6 @@ export interface Config {
   appID: null | string;
   publicKey: null | string;
   webhookUrl: string;
-  orgID: null | string;
   conString: null | string;
   baseDN: null | string;
   username: null | string;

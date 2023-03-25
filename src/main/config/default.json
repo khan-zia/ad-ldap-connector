@@ -4,7 +4,6 @@
   "appID": "64172-91238-68981",
   "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAdR4J25pC54vAhvnUAgOJH8lbithKvF713mp3EVWgwwU=\n-----END PUBLIC KEY-----\n",
   "webhookUrl": "https://demo9575839.mockable.io/api/extensions/ldap-connector/webhook",
-  "orgID": "12345-12345-12344",
   "conString": "LDAP://meveto-dc01.meveto.com",
   "baseDN": "CN=Users,DC=meveto,DC=com",
   "username": "administrator",

@@ -8,7 +8,7 @@ import log from '../utils/logger';
  * password. If the connection succeeds, the method will resolve a Promise with boolean "true" or
  * "false" if it fails. It will reject with an error message if available.
  */
-export const testLDAPConnection = (credentials: Omit<SaveCredsRequestBody, 'orgID'>): Promise<boolean | string> =>
+export const testLDAPConnection = (credentials: SaveCredsRequestBody): Promise<boolean | string> =>
   new Promise((resolve, reject) => {
     log.debug('Attempting to test and validate the provided LDAP credentials.');
 
@@ -52,7 +52,7 @@ export const testLDAPConnection = (credentials: Omit<SaveCredsRequestBody, 'orgI
  * This method stores the LDAP connection string, base DN, username and password.
  * It will encrypt the password before storage.
  */
-export const storeCredentials = (credentials: Omit<SaveCredsRequestBody, 'orgID'>): Promise<boolean | string> =>
+export const storeCredentials = (credentials: SaveCredsRequestBody): Promise<boolean | string> =>
   new Promise((resolve, reject) => {
     log.debug('Preparing LDAP credentials for storage.');
 

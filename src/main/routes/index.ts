@@ -124,7 +124,7 @@ const saveCredentials: RequestHandler = async (
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { orgID, ...ldapCreds } = req.body;
+  const ldapCreds = req.body;
 
   try {
     await testLDAPConnection(ldapCreds);
@@ -132,9 +132,6 @@ const saveCredentials: RequestHandler = async (
 
     await storeCredentials(ldapCreds);
     log.debug('LDAP credentials have been prepared and set on the config object.');
-
-    // Store Meveto org ID on the config.
-    nconf.set('orgID', orgID);
 
     // Update the app's state.
     nconf.set('state', 'ready');
@@ -257,13 +254,6 @@ router.post(
   '/save',
   isAdmin,
   [
-    check('orgID')
-      .exists({ checkNull: true })
-      .withMessage('Please provide your Meveto organization ID.')
-      .matches(/^(\d{5}-){2}\d{5}$/)
-      .withMessage(
-        'Your Meveto organization ID is made of 3 sets of 5 digits separated by the dash symbol e.g. 12345-12345-12345'
-      ),
     check('conString')
       .exists({ checkNull: true })
       .withMessage('Please provide an LDAP connection string for your Active Directory.')
