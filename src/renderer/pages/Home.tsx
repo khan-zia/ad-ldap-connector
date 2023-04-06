@@ -1,5 +1,6 @@
-import { Button, Dialog, DialogActions, DialogContent } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button, Dialog, DialogActions, DialogContent } from '@mui/material';
 import { toast } from 'react-toastify';
 import Time from '../components/Time';
 
@@ -33,6 +34,7 @@ const Home = (): JSX.Element => {
   const [confirmationMsg, setConfirmationMsg] = useState<string>('');
   const [syncAction, setSyncAction] = useState<SyncAction | null>(null);
   const [syncing, setSyncing] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   const pullLastSync = (): Promise<void> =>
     fetch('http://localhost:6970/last-sync')
@@ -51,8 +53,17 @@ const Home = (): JSX.Element => {
         flashError((error as Error).message);
       });
 
+  /**
+   * If the app's state exists in the local storage and indicates that the app is not ready yet or
+   * if the app's state does not exist at all, then redirect to initial page "/".
+   * Other wise, pull the latest sync time on mount.
+   */
   useEffect(() => {
-    pullLastSync();
+    if (!localStorage.getItem('state') || localStorage.getItem('state') !== 'ready') {
+      navigate('/');
+    } else {
+      pullLastSync();
+    }
   }, []);
 
   const sync = (action: SyncAction): void => {
