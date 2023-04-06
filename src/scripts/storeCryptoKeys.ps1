@@ -23,9 +23,6 @@ If (!(Test-Path $FileDirectory)) {
 # File name that will store the encyrpted version of the private key.
 $Target = Join-Path -Path $FileDirectory -ChildPath "AsymmetricEncryptedPrivateKey.enc"
 
-# File name that will store the encyrpted version of the AES key.
-$AESTarget = Join-Path -Path $FileDirectory -ChildPath "SymmetricEncryptedPrivateKey.enc"
-
 # Load any external modules
 # & "$PSScriptRoot\moduleLoader.ps1"
 
@@ -43,36 +40,24 @@ $AESKey = [byte[]]::new(32)
 $RandomNum = [System.Security.Cryptography.RNGCryptoServiceProvider]::new()
 $RandomNum.GetBytes($AESKey)
 
-# Encrypt the AES key
-$EncryptedAESKeyBytes = [System.Security.Cryptography.ProtectedData]::Protect($AESKey, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)
-
 # Store the encrypted private key at the specified location.
 Set-Content -Path $Target -Value $EncryptedPrivateKeyBytes -Encoding Byte
 
-# Store the encrypted AES key at the specified location.
-Set-Content -Path $AESTarget -Value $EncryptedAESKeyBytes -Encoding Byte
-
 # Make the files hidden and read only by default.
 $PKey = Get-Item $Target -Force
-$AES = Get-Item $AESTarget -Force
 
 $PKey.Attributes = $PKey.Attributes -bor [System.IO.FileAttributes]::Hidden
 $PKey.Attributes = $PKey.Attributes -bor [System.IO.FileAttributes]::ReadOnly
-$AES.Attributes = $AES.Attributes -bor [System.IO.FileAttributes]::Hidden
-$AES.Attributes = $AES.Attributes -bor [System.IO.FileAttributes]::ReadOnly
 
 # Disable permission inheritance for the files. Remove all existing permissions and then assign only the current user to
 # have "Read" permission.
 $PKeyACL = Get-Acl $Target
-$AESACL = Get-Acl $AESTarget
 
 $PKeyACL.SetAccessRuleProtection($True, $False)
-$AESACL.SetAccessRuleProtection($True, $False)
 $PKeyACL.SetOwner([System.Security.Principal.NTAccount] $env:USERNAME)
-$AESACL.SetOwner([System.Security.Principal.NTAccount] $env:USERNAME)
 $ReadRule = New-Object System.Security.AccessControl.FileSystemAccessRule($env:USERNAME, 'Read', 'Allow')
+$LocalSystemRule = New-Object System.Security.AccessControl.FileSystemAccessRule("NT AUTHORITY\SYSTEM", "Read", "Allow")
 $PKeyACL.AddAccessRule($ReadRule)
-$AESACL.AddAccessRule($ReadRule)
+$PKeyACL.AddAccessRule($LocalSystemRule)
 
 Set-Acl $Target -AclObject $PKeyACL
-Set-Acl $AESTarget -AclObject $AESACL
