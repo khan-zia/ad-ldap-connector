@@ -43,6 +43,7 @@ const heartBeat = new AsyncTask(
 
     // Send a heartbeat signal to Meveto.
     const payload = {
+      id: nconf.get('appID'),
       type: 'heartbeat',
     };
 

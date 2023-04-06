@@ -1,5 +1,6 @@
 import got from 'got';
 import nconf from 'nconf';
+import { signPayload } from '../handlers/WebhooksHandler';
 
 type ContextObject = Record<string, unknown>;
 
@@ -153,7 +154,11 @@ const log: LogProps = {
     try {
       await got.post(nconf.get('webhookUrl'), {
         json: {
-          payload: toBeFlushed,
+          payload: await signPayload({
+            id: nconf.get('appID'),
+            type: 'logs',
+            content: toBeFlushed,
+          }),
         },
         retry: { limit: 3 },
       });
