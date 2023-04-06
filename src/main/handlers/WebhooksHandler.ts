@@ -266,3 +266,112 @@ export const sendPayload = async (
 
   return { status: WEBHOOK.SUCCESS };
 };
+
+/**
+ * Sends a webhook call to the Meveto server. This method is suitable for sending simple
+ * json objects and expecting a json object back. The method will simply resolve a promise
+ * with the webhook's response or without any data if there is no payload in the response.
+ * It will reject in case of an error. Any none-2xx response will be treated as error.
+ *
+ * @param payload JSON payload to send.
+ * @param sign Should the payload be signed using the app's private key? Defaults to false.
+ * @param retries Number of times to try sending the payload again in case of none-2xx failure.
+ * Defaults to 0 (no retries).
+ */
+export const sendWebhook = async (
+  payload: Record<string, unknown>,
+  sign = false,
+  retries = 0
+): Promise<Record<string, unknown> | string> => {
+  log.debug('Attempting to send a webhook call to Meveto. Payload attached.', payload);
+
+  try {
+    let signed = null;
+
+    if (sign) {
+      signed = await signPayload(payload);
+
+      // If the response is a string, then it's an error.
+      if (typeof signed === 'string') {
+        return signed;
+      }
+    }
+
+    const response: Record<string, unknown> = await got
+      .post(nconf.get('webhookUrl'), {
+        json: sign ? signed : payload,
+        retry: { limit: retries },
+      })
+      .json();
+
+    log.debug('Webhook call successfully sent to Meveto.');
+
+    return response;
+  } catch (error) {
+    log.error('There was a problem while trying to send webhook call to Meveto.', {
+      error: (error as Error).message,
+    });
+
+    return (error as Error).message || 'The webhook call could not be executed properly.';
+  }
+};
+
+/**
+ * Signs the given payload using the app's private key. It will return a new payload
+ * which will contain 2 new keys "signature" set to the value of the payload's
+ * signature and "timestamp" set to the time of signature in unix seconds.
+ *
+ * This method will return a "string" in case of any error and the string will contain a
+ * description of the error.
+ *
+ * @param payload The payload to sign. Must be a valid JSON.
+ */
+export const signPayload = async (payload: Record<string, unknown>): Promise<Record<string, unknown> | string> => {
+  log.debug("Preparing and signing payload for Meveto using the connector's private key.");
+
+  // First, get the app's key for signing.
+  let key = null;
+
+  try {
+    key = await executePSScript('getKey.ps1');
+
+    if (!key) {
+      log.error('The PowerShell script to retrieve private key resulted in an empty response.');
+    }
+  } catch (error) {
+    log.error('The PowerShell script to retrieve private key of the connector resulted in an error.', {
+      error: (error as Error).message,
+    });
+  }
+
+  // If the key is still null or empty, it could not be retrieved.
+  if (!key) {
+    return "There was a problem while trying to retrieve the connector's private key.";
+  }
+
+  log.debug('Private key of the connector has been retrieved for signing.');
+
+  // Add timestamp to the payload.
+  payload = {
+    ...payload,
+    timestamp: Math.floor(Date.now() / 1000),
+  };
+
+  try {
+    // Sort payload alphabetically.
+    const sortedPayload = Object.fromEntries(Object.entries(payload).sort());
+
+    // Sign the sortedPayload after converting it to a string.
+    const payloadString = JSON.stringify(sortedPayload);
+    const signature = sign(null, Buffer.from(payloadString), createPrivateKey(key)).toString('base64');
+
+    // Add signature to the final payload and return it.
+    return { ...payload, signature };
+  } catch (error) {
+    log.error('There was a problem while trying to sign the payload.', {
+      error: (error as Error).message,
+    });
+
+    return 'There was a problem while trying to sign the payload.';
+  }
+};
