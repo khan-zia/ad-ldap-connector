@@ -74,55 +74,21 @@ export const sendPayload = async (
     };
   }
 
-  log.debug("Preparing and signing payload for Meveto using the connector's private key.");
-
-  // Prepare payload for signing.
-  const payload = {
+  // Prepare and sign payload.
+  const payload = await signPayload({
     id: nconf.get('appID'),
     type: payloadType,
     fileName,
     checksum,
-    timestamp: Math.floor(Date.now() / 1000),
-  };
+  });
 
-  // Sort payload alphabetically.
-  const sortedPayload = Object.fromEntries(Object.entries(payload).sort());
-
-  // Get the app's key for signing.
-  let key = null;
-
-  try {
-    key = await executePSScript('getKey.ps1');
-
-    if (!key) {
-      log.error('The PowerShell script to retrieve private key resulted in an empty response.');
-
-      return {
-        status: WEBHOOK.FAILURE,
-        message: "There was a problem while trying to retrieve the Connector's private key.",
-      };
-    }
-  } catch (error) {
-    log.error('The PowerShell script to retrieve private key of the connector resulted in an error.', {
-      error: (error as Error).message,
-    });
-
+  // if the signing process returned a string, that's an error.
+  if (typeof payload === 'string') {
     return {
       status: WEBHOOK.FAILURE,
-      message: "There was a problem while trying to retrieve the Connector's private key.",
+      message: payload,
     };
   }
-
-  log.debug('Private key of the connector has been retrieved for signing.');
-
-  // Sign the sortedPayload after converting it to a string.
-  const payloadString = JSON.stringify(sortedPayload);
-  const signature = sign(null, Buffer.from(payloadString), createPrivateKey(key)).toString('base64');
-
-  // Add signature to the final payload.
-  const finalPayload = { ...payload, signature };
-
-  log.debug('Payload has been finalized and signed. Payload ready for transport.');
 
   // Construct HTTP request.
   const url = new URL(nconf.get('webhookUrl'));
@@ -192,7 +158,7 @@ export const sendPayload = async (
       });
 
       // Execute the request.
-      req.write(JSON.stringify(finalPayload));
+      req.write(JSON.stringify(payload));
       req.end();
     });
   } catch (error) {
