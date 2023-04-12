@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-model href="http://wixtoolset.org/schemas/v4/wxl"?>
+<WixLocalization Culture="en-us" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="Company">Meveto</String>
+  <String Id="BuildVersion">1.0.0.0</String>
+  <String Id="ProductCode">{a5a9ea48-2d10-41b5-a499-532f6e26da61}</String>
+  <String Id="ProductName">Meveto AD/LDAP Connector</String>
+  <String Id="Description">The Meveto connector for syncing your on-premise Active Directory and LDAP stores with Meveto.</String>
+  <String Id="Keywords">meveto,passwordless,authentication,authorization</String>
+  <String Id="DowngradeErrorMessage">A newer version of the Meveto AD/LDAP Connector is already installed.</String>
+  <String Id="Language">1033</String>
+</WixLocalization>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://wixtoolset.org/schemas/v4/wxs"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <StandardDirectory Id="ProgramFiles6432Folder">
+        <Directory Id="INSTALLFOLDER" Name="!(bind.Property.ProductName)">
+            <Directory Id="DirectoryConfigComponent" Name="config" />
+            <Directory Id="DirectoryFront" Name="front">
+                <Directory Id="DirectoryFrontAssets" Name="assets" />
+            </Directory>
+            <Directory Id="DirectoryScripts" Name="scripts" />
+        </Directory>
+    </StandardDirectory>
+  </Fragment>
+</Wix>

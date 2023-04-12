@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://wixtoolset.org/schemas/v4/wxs"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="ConnectorComponents">
+        <ComponentRef Id="ConnectorBackendNodeFile" />
+    </ComponentGroup>
+
+    <!-- App.mjs -->
+    <DirectoryRef Id="INSTALLFOLDER" FileSource="..\build\">
+      <Component Id="ConnectorBackendNodeFile" Guid="{0e9a0f3d-3ff1-4ba2-84dc-6e27fb3c0a7e}">
+        <File Id="file_main_backend_node" Name="app.mjs" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- config/default.json -->
+    <DirectoryRef Id="DirectoryConfigComponent" FileSource="..\build\config">
+        <Component Id="ConnectorDefaultConfig" Guid="{dd87ff97-3635-4f55-90c0-4ef2b5a54c0b}">
+          <File Id="file_connector_default_config" Name="default.json" KeyPath="yes" />
+        </Component>
+      </DirectoryRef>
+  </Fragment>
+</Wix>
