@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-model href="http://schemas.microsoft.com/developer/msbuild/2003"?>
+<Project Sdk="WixToolset.Sdk/4.0.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <OutputName>Meveto-AD-LDAP-Connector-$(Configuration)-$(Platform)</OutputName>
+    <OutputType>Package</OutputType>
+    <OutputPath>..\release\$(Configuration)\</OutputPath>
+    <Cultures>;</Cultures>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DefineConstants>Debug</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Heat" Version="4.0.0" />
+    <PackageReference Include="WixToolset.UI.wixext" Version="4.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <HarvestDirectory Include="..\build">
+      <ComponentGroupName>HarvestedComponents</ComponentGroupName>
+      <DirectoryRefId>INSTALLFOLDER</DirectoryRefId>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+    </HarvestDirectory>
+    <BindPath Include="..\build" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://wixtoolset.org/schemas/v4/wxs"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+    <!-- Fixed upgrade code. This should never change unless the Connector becomes entirely obsolete -->
+    <!-- and may or may not get replaced with a different app. -->
+    <?define UpgradeCode = "{3de2814b-aab0-4aae-b668-9d4769fa2845}"?>
+
+    <!-- Define app's version. This needs to be changed accordingly before rolling out a production
+    update. -->
+    <?define AppVersion = "1.0.0"?>
+
+    <Package
+        ProductCode="*"
+        Scope="perMachine"
+        UpgradeCode="$(var.UpgradeCode)"
+        Name="!(loc.ProductName)"
+        Manufacturer="!(loc.Company)"
+        Version="$(var.AppVersion)"
+        Language="!(loc.Language)"
+    >
+        <SummaryInformation Description="!(loc.Description)" Keywords="!(loc.Keywords)" />
+
+        <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" />
+
+        <!-- Include .cab file into .msi file -->
+        <MediaTemplate EmbedCab="yes" />
+
+        <!-- Help/Support website (shows in the Add/Remove programs) -->
+        <Property Id="ARPURLINFOABOUT" Value="https://www.meveto.com" />
+
+        <!-- Create a basic UI for the installer -->
+        <ui:WixUI
+            Id="WixUI_Minimal"
+            InstallDirectory="INSTALLFOLDER"
+        />
+
+        <Feature Id="ProductFeature" Title="Meveto AD/LDAP Connector" Level="1">
+            <ComponentGroupRef Id="HarvestedComponents" />
+        </Feature>
+    </Package>
+</Wix>

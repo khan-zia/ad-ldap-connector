@@ -1,8 +1,9 @@
 @echo off
+
 cmd /c ncc build .\src\main\app.ts -o .\src\main\dist
 if not exist .\build mkdir .\build
 sed -i 's/..\/..\/scripts/\.\/scripts/g' .\src\main\dist\index.js
-cmd /c terser .\src\main\dist\index.js -o .\build\index.mjs -c -m --module
+cmd /c terser .\src\main\dist\index.js -o .\build\app.mjs -c -m --module
 cd .\src\renderer
 cmd /c yarn build
 cd /d %~dp0
@@ -12,6 +13,14 @@ if not exist .\build\front mkdir .\build\front
 xcopy /Y /E /I .\src\renderer\dist .\build\front
 if not exist .\build\config mkdir .\build\config
 copy .\src\main\config\default.json .\build\config
+
+set NODE_EXE="C:\Program Files\nodejs\node.exe"
+IF EXIST %NODE_EXE% (
+    copy %NODE_EXE% .\build
+) else (
+    echo ERROR: Node's runtime executable could not be found at the default location: %NODE_EXE%
+    exit /b 1
+)
 
 setlocal enabledelayedexpansion
 

@@ -3,4 +3,5 @@ release
 release-assets
 dist
 build
+obj
 *.log*
