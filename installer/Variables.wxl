@@ -2,7 +2,6 @@
 <?xml-model href="http://wixtoolset.org/schemas/v4/wxl"?>
 <WixLocalization Culture="en-us" xmlns="http://wixtoolset.org/schemas/v4/wxl">
   <String Id="Company" Value="Meveto" />
-  <String Id="AppVersion" Value="1.0.0" />
   <String Id="ProductName" Value="Meveto AD/LDAP Connector" />
   <String Id="Description"
     Value="The Meveto connector for syncing your on-premise Active Directory and LDAP stores with Meveto." />

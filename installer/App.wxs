@@ -7,7 +7,7 @@
 
     <!-- Define app's version. This needs to be changed accordingly before rolling out a production
     update. -->
-    <?define AppVersion = "1.0.0"?>
+    <?define Version = "1.0.0"?>
 
     <Package
         ProductCode="*"
@@ -15,7 +15,7 @@
         UpgradeCode="$(var.UpgradeCode)"
         Name="!(loc.ProductName)"
         Manufacturer="!(loc.Company)"
-        Version="$(var.AppVersion)"
+        Version="$(Version)"
         Language="!(loc.Language)"
     >
         <SummaryInformation Description="!(loc.Description)" Keywords="!(loc.Keywords)" />
@@ -35,7 +35,51 @@
         />
 
         <Feature Id="ProductFeature" Title="Meveto AD/LDAP Connector" Level="1">
-            <ComponentGroupRef Id="HarvestedComponents" />
+            <Component Id="MainApp" Directory="INSTALLFOLDER">
+                <File Id="MainAppFile" Source="..\build\app.mjs" KeyPath="yes" />
+            </Component>
+            <Component
+                Id="NodeBin" Directory="BinDir">
+                <File Id="NodeBinFile" Source="..\build\bin\node.exe" KeyPath="yes" />
+            </Component>
+            <Component
+                Id="NssmBin" Directory="BinDir">
+                <File Id="NssmBinFile" Source="..\build\bin\nssm.exe" KeyPath="yes" />
+            </Component>
+            <Component
+                Id="HttpServerBin" Directory="BinDir">
+                <File Id="HttpServerBinFile" Source="..\build\bin\http-server" KeyPath="yes" />
+            </Component>
+            <Component
+                Id="HttpServerStarterBin" Directory="BinDir">
+                <File Id="HttpServerStarterBinFile" Source="..\build\bin\start.cmd" KeyPath="yes" />
+            </Component>
+            <Component
+                Id="DefaultConfig" Directory="ConfigDir">
+                <File Id="DefaultConfigFile" Source="..\build\config\default.json" KeyPath="yes" />
+            </Component>
+            <Component
+                Id="IndexHtml" Directory="FrontDir">
+                <File Id="IndexHtmlFile" Source="..\build\front\index.html" KeyPath="yes" />
+            </Component>
+            <ComponentGroupRef
+                Id="HarvestedAssetsComponents" />
+            <ComponentGroupRef Id="HarvestedScriptsComponents" />
+            <ComponentRef Id="NssmServicesControl" />
         </Feature>
+
+        <SetProperty Id="WixQuietExecCmdLine"
+            Value="&quot;[%ComSpec]&quot; /c explorer.exe &quot;http://127.0.0.1:6971&quot;"
+            Sequence="execute" Before="LaunchBrowser" />
+        <CustomAction Id="LaunchBrowser" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+            DllEntry="WixQuietExec" Return="ignore" />
+
+        <InstallExecuteSequence>
+            <Custom Action="MevetoConnectorProcess" Before="StartServices" />
+            <Custom Action="ConnectorStdOut" After="MevetoConnectorProcess" />
+            <Custom Action="ConnectorStdErr" After="MevetoConnectorProcess" />
+            <Custom Action="MevetoConnectorUI" Before="StartServices" />
+            <Custom Action="LaunchBrowser" After="InstallFinalize" />
+        </InstallExecuteSequence>
     </Package>
 </Wix>

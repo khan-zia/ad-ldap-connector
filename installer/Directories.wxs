@@ -3,7 +3,12 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
     <StandardDirectory Id="ProgramFiles6432Folder">
-      <Directory Id="INSTALLFOLDER" Name="Meveto" />
+      <Directory Id="INSTALLFOLDER" Name="Meveto">
+        <Directory Id="BinDir" Name="bin" />
+        <Directory Id="ConfigDir" Name="config" />
+        <Directory Id="FrontDir" Name="front" />
+        <Directory Id="ScriptsDir" Name="scripts" />
+      </Directory>
     </StandardDirectory>
   </Fragment>
 </Wix>

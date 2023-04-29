@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://wixtoolset.org/schemas/v4/wxs"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Fragment>
+        <CustomAction
+            Id="MevetoConnectorProcess"
+            Impersonate="no"
+            Execute="deferred"
+            FileRef="NssmBinFile"
+            ExeCommand='install Meveto "[INSTALLFOLDER]bin\node.exe" """[INSTALLFOLDER]app.mjs"""'
+            Return="asyncWait"
+        />
+
+        <CustomAction
+            Id="ConnectorStdOut"
+            Impersonate="no"
+            Execute="deferred"
+            FileRef="NssmBinFile"
+            ExeCommand='set Meveto AppStdout "[INSTALLFOLDER]logs\stdout.log"'
+            Return="asyncWait"
+        />
+
+        <CustomAction
+            Id="ConnectorStdErr"
+            Impersonate="no"
+            Execute="deferred"
+            FileRef="NssmBinFile"
+            ExeCommand='set Meveto AppStderr "[INSTALLFOLDER]logs\stderr.log"'
+            Return="asyncWait"
+        />
+
+        <CustomAction
+            Id="MevetoConnectorUI"
+            Impersonate="no"
+            Execute="deferred"
+            FileRef="NssmBinFile"
+            ExeCommand='install "Meveto UI" "[INSTALLFOLDER]bin\start.cmd"'
+            Return="asyncWait"
+        />
+
+        <Component Id="NssmServicesControl" Directory="INSTALLFOLDER"
+            Guid="8eb5e20b-b396-4728-a02c-f2d9903ad789">
+            <ServiceControl Name="Meveto" Start="install" Stop="both" Remove="uninstall" />
+            <ServiceControl Name="Meveto UI" Start="install" Stop="both" Remove="uninstall" />
+        </Component>
+    </Fragment>
+</Wix>

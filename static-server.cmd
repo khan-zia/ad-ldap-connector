@@ -1,0 +1,1 @@
+.\node.exe .\http-server ..\front -p 6971 -d false -s --proxy http://127.0.0.1:6971?

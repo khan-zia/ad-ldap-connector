@@ -10,21 +10,38 @@
     <Cultures>;</Cultures>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <DefineConstants>Debug</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="WixToolset.Heat" Version="4.0.0" />
     <PackageReference Include="WixToolset.UI.wixext" Version="4.0.0" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="4.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <HarvestDirectory Include="..\build">
-      <ComponentGroupName>HarvestedComponents</ComponentGroupName>
-      <DirectoryRefId>INSTALLFOLDER</DirectoryRefId>
+    <HarvestDirectory Include="..\build\bin">
+      <ComponentGroupName>HarvestedExternalBinsComponents</ComponentGroupName>
+      <DirectoryRefId>BinDir</DirectoryRefId>
       <SuppressRootDirectory>true</SuppressRootDirectory>
     </HarvestDirectory>
-    <BindPath Include="..\build" />
+
+    <BindPath Include="..\build\bin" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <HarvestDirectory Include="..\build\front\assets">
+      <ComponentGroupName>HarvestedAssetsComponents</ComponentGroupName>
+      <DirectoryRefId>FrontDir</DirectoryRefId>
+    </HarvestDirectory>
+
+    <BindPath Include="..\build\front\assets" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <HarvestDirectory Include="..\build\scripts">
+      <ComponentGroupName>HarvestedScriptsComponents</ComponentGroupName>
+      <DirectoryRefId>ScriptsDir</DirectoryRefId>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+    </HarvestDirectory>
+
+    <BindPath Include="..\build\scripts" />
   </ItemGroup>
 </Project>
