@@ -4,5 +4,4 @@ build-time-assets
 dist
 build
 obj
-src/main/config/default.json
 *.log*
