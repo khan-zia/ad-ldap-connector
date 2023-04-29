@@ -5,7 +5,7 @@ import https from 'https';
 import nconf from 'nconf';
 import { FormData } from 'formdata-node';
 import { fileFromPath } from 'formdata-node/file-from-path';
-import got from 'got';
+import got, { HTTPError, Response } from 'got';
 import { SyncAction } from '../../renderer/pages/Home';
 import { executePSScript } from '../utils';
 import log from '../utils/logger';
@@ -18,6 +18,9 @@ export const WEBHOOK = {
 type SendPayloadResponse = {
   status: (typeof WEBHOOK)[keyof typeof WEBHOOK];
   message?: string;
+  payload?: {
+    uploadUrl: string;
+  };
 };
 
 /**
@@ -92,129 +95,133 @@ export const sendPayload = async (
 
   // Construct HTTP request.
   const url = new URL(nconf.get('webhookUrl'));
-  const httpOptions: https.RequestOptions = {
-    hostname: url.hostname,
-    path: url.pathname,
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
 
   // Process the HTTP request.
+  let responseData: SendPayloadResponse;
+
   try {
     log.debug('Attempting to send the payload to Meveto using the specified webhook URL.');
 
-    await new Promise<SendPayloadResponse>((resolve, reject) => {
-      const req = https.request(httpOptions, (res) => {
-        // Collect response data from the buffer.
-        let responseData = Buffer.from([]);
-        res.on('data', (chunk) => {
-          responseData = Buffer.concat([responseData, chunk]);
-        });
+    responseData = await got
+      .post(url, {
+        json: payload,
+        retry: { limit: 0 },
+      })
+      .json();
 
-        // Process response upon request completion.
-        res.on('end', () => {
-          const response: SendPayloadResponse = JSON.parse(responseData.toString());
+    if (responseData.status !== WEBHOOK.SUCCESS || !responseData.payload) {
+      log.error('Failed to send syncing payload. Meveto returned a status indicating failure.', responseData);
 
-          // Response received from the Meveto side must be an object.
-          if (!response || typeof response !== 'object') {
-            reject(
-              new Error(
-                'Sync failed. Invalid or unexpected response received while attempting to sync data. Please contact our support if the issue persists.'
-              )
-            );
-
-            return;
-          }
-
-          if (
-            !(res.statusCode && res.statusCode >= 200 && res.statusCode < 300) ||
-            response.status !== WEBHOOK.SUCCESS
-          ) {
-            reject(
-              new Error(
-                response.message || `Sync failed. Received unexpected status code of ${res.statusCode} from Meveto`
-              )
-            );
-
-            return;
-          }
-
-          resolve(response);
-        });
-      });
-
-      // Catch any TCP/IP level errors.
-      req.on('error', (error) => {
-        reject(
-          new Error(
-            error.message ||
-              "Sync failed because an unexpected network error occurred. Please check your internet connection and make sure that your firewall settings isn't blocking the Connector."
-          )
-        );
-
-        return;
-      });
-
-      // Execute the request.
-      req.write(JSON.stringify(payload));
-      req.end();
-    });
+      return {
+        status: WEBHOOK.FAILURE,
+        message: responseData.message || genericError,
+      };
+    }
   } catch (error) {
+    const err: HTTPError = error as HTTPError;
+    const resBody = err.response?.body as string;
+    let body: SendPayloadResponse | null = null;
+    if (resBody) {
+      body = JSON.parse(resBody) as SendPayloadResponse;
+    }
+
     log.error(
       'Payload could not be sent to Meveto. Transport attempt resulted in an error that could be either due to a problem at the Meveto backend or the HTTP request from the connector. If the Meveto backend responded with an HTTP status other than the 2xx, that will also result in this message.',
       {
-        error: (error as Error).message,
+        error: body ? body.message : err.message,
       }
     );
 
     return {
       status: WEBHOOK.FAILURE,
-      message: (error as Error).message || genericError,
+      message: body ? body.message : genericError,
     };
   }
 
   log.debug('Signed payload has been successfully sent to Meveto. Meveto acknowledged with a 2xx HTTP response.');
 
-  // After the initial HTTP request is successfully completed, upload the CSV file to Meveto.
+  // After the initial HTTP request is successfully completed, upload the CSV file to AWS.
   try {
     log.debug('Attempting to upload the actual file that contains syncing data to Meveto.');
 
     const form = new FormData();
     form.set(fileName, fileFromPath(filePath));
 
-    const response: SendPayloadResponse = await got
-      .post(nconf.get('webhookUrl'), {
+    await got
+      .put(responseData.payload.uploadUrl, {
         body: form,
+        headers: {
+          'Content-Type': 'text/csv',
+        },
         retry: { limit: 0 },
       })
       .json();
-
-    if (response.status !== WEBHOOK.SUCCESS) {
-      log.error('Failed to upload the syncing file to Meveto because Meveto returned a status indicating failure.', {
-        responseStatus: response.status,
-        failureMessageFromMeveto: response.message,
-      });
-
-      return {
-        status: WEBHOOK.FAILURE,
-        message: response.message || genericError,
-      };
-    }
   } catch (error) {
-    log.error('The syncing file could not be uploaded to Meveto.', {
-      error: (error as Error).message,
+    const err: HTTPError = error as HTTPError;
+
+    log.error('The syncing file could not be uploaded to AWS S3.', {
+      errorMsg: err.message,
+      body: err.response.body,
     });
 
     return {
       status: WEBHOOK.FAILURE,
-      message: (error as Error).message || genericError,
+      message: err.message || genericError,
+    };
+  }
+
+  try {
+    log.debug('Attempting to let Meveto know that the syncing file has been uploaded to S3.');
+
+    // Prepare and sign payload.
+    const payload = await signPayload({
+      id: nconf.get('appID'),
+      type: 'fileUploaded',
+      fileName,
+    });
+
+    console.log(payload);
+
+    responseData = await got
+      .post(url, {
+        json: payload,
+        retry: { limit: 0 },
+      })
+      .json();
+
+    if (responseData.status !== WEBHOOK.SUCCESS || !responseData.payload) {
+      log.error(
+        'Failed to let Meveto know about the file upload to S3. Meveto returned a status indicating failure.',
+        responseData
+      );
+
+      return {
+        status: WEBHOOK.FAILURE,
+        message: responseData.message || genericError,
+      };
+    }
+  } catch (error) {
+    console.log('ohoo ooo');
+    const err: HTTPError = error as HTTPError;
+    const resBody = err.response?.body as string;
+    let body: SendPayloadResponse | null = null;
+    if (resBody) {
+      body = JSON.parse(resBody) as SendPayloadResponse;
+    }
+
+    log.error('Failed to let Meveto know about the file upload to S3.', {
+      error: body ? body.message : err.message,
+    });
+
+    return {
+      status: WEBHOOK.FAILURE,
+      message: body ? body.message : genericError,
     };
   }
 
   // After the file has been successfully sent to Meveto, delete it.
   log.debug('Attempting to delete the file as it is no longer needed.');
+
   fs.unlink(filePath, (err) => {
     if (err) {
       log.error(
