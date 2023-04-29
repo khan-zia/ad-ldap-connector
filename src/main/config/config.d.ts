@@ -6,7 +6,7 @@ export interface Config {
   webhookUrl: string;
   conString: null | string;
   baseDN: null | string;
-  username: null | string;
+  ldapUsername: null | string;
   password: null | string;
   lastGroupsPartialSync: null | string;
   lastGroupsFullSync: null | string;

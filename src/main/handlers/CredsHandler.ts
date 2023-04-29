@@ -64,7 +64,7 @@ export const storeCredentials = (credentials: SaveCredsRequestBody): Promise<boo
           // Store values in the config
           nconf.set('conString', credentials.conString);
           nconf.set('baseDN', credentials.baseDN);
-          nconf.set('username', credentials.username);
+          nconf.set('ldapUsername', credentials.username);
           nconf.set('password', sanitized);
 
           resolve(true);

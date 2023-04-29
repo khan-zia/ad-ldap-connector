@@ -36,7 +36,7 @@ const syncActions: SyncActionProps = {
             const searchBase = nconf.get('baseDN');
             resolve({
               server: nconf.get('conString')?.replace('LDAP://', '')?.replace('LDAPS://', ''),
-              username: nconf.get('username'),
+              username: nconf.get('ldapUsername'),
               password: decryptedPassword,
               searchBase: searchBase === '' ? null : searchBase,
             });

@@ -1,0 +1,15 @@
+{
+  "state": "pendingConfig",
+  "port": "6970",
+  "appID": null,
+  "publicKey": null,
+  "webhookUrl": "https://staging.meveto.com/api/extensions/ldap-connector/webhook",
+  "conString": null,
+  "baseDN": null,
+  "ldapUsername": null,
+  "password": null,
+  "lastGroupsPartialSync": null,
+  "lastGroupsFullSync": null,
+  "lastUsersPartialSync": null,
+  "lastUsersFullSync": null
+}
