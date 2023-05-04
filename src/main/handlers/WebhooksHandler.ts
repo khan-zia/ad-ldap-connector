@@ -1,11 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { createHash, createPrivateKey, sign } from 'crypto';
-import https from 'https';
 import nconf from 'nconf';
-import { FormData } from 'formdata-node';
-import { fileFromPath } from 'formdata-node/file-from-path';
-import got, { HTTPError, Response } from 'got';
+import got, { HTTPError } from 'got';
 import { SyncAction } from '../../renderer/pages/Home';
 import { executePSScript } from '../utils';
 import log from '../utils/logger';
@@ -94,7 +91,7 @@ export const sendPayload = async (
   }
 
   // Construct HTTP request.
-  const url = new URL(nconf.get('webhookUrl'));
+  const url = nconf.get('webhookUrl');
 
   // Process the HTTP request.
   let responseData: SendPayloadResponse;
@@ -144,12 +141,11 @@ export const sendPayload = async (
   try {
     log.debug('Attempting to upload the actual file that contains syncing data to Meveto.');
 
-    const form = new FormData();
-    form.set(fileName, fileFromPath(filePath));
+    const fileContent = await fs.promises.readFile(filePath);
 
     await got
       .put(responseData.payload.uploadUrl, {
-        body: form,
+        body: fileContent,
         headers: {
           'Content-Type': 'text/csv',
         },
@@ -180,8 +176,6 @@ export const sendPayload = async (
       fileName,
     });
 
-    console.log(payload);
-
     responseData = await got
       .post(url, {
         json: payload,
@@ -189,7 +183,7 @@ export const sendPayload = async (
       })
       .json();
 
-    if (responseData.status !== WEBHOOK.SUCCESS || !responseData.payload) {
+    if (responseData.status !== WEBHOOK.SUCCESS) {
       log.error(
         'Failed to let Meveto know about the file upload to S3. Meveto returned a status indicating failure.',
         responseData
@@ -201,7 +195,6 @@ export const sendPayload = async (
       };
     }
   } catch (error) {
-    console.log('ohoo ooo');
     const err: HTTPError = error as HTTPError;
     const resBody = err.response?.body as string;
     let body: SendPayloadResponse | null = null;
