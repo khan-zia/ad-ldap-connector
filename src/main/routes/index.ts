@@ -9,6 +9,7 @@ import { sync as syncHandler } from '../handlers/SyncHandler';
 import { isElevated } from '../utils';
 import { LastSyncResponse, SyncAction } from '../../renderer/pages/Home';
 import log from '../utils/logger';
+import { getCurrentVersion } from '../handlers/updateHandler';
 
 // Initialize the router.
 const router = express.Router();
@@ -217,6 +218,34 @@ const sync: RequestHandler = async (
   }
 };
 
+const checkUpdate: RequestHandler = async (_, res: Response<Record<string, unknown>>) => {
+  log.debug('Attempting to check for updates.');
+
+  try {
+    const version = await getCurrentVersion();
+    log.debug(`Current version of the connector has been retrieved: v${version}`);
+
+    log.debug("Connector's configuration has been successfully completed.");
+    log.flush();
+
+    // Return success response along with the app's ID and public key.
+    return res.json({
+      success: true,
+      id: nconf.get('appID'),
+      publicKey: nconf.get('publicKey'),
+      state: nconf.get('state'),
+    });
+  } catch (error) {
+    log.error('Failed to check for an update. An error message is included in the context.', {
+      error: (error as Error).message,
+    });
+
+    log.flush();
+
+    return res.json({ success: false, message: (error as Error).message });
+  }
+};
+
 router.get('/state', (_, res: Response<Record<string, unknown>>) => {
   // Return current state of the connector.
   const state: Config['state'] = nconf.get('state');
@@ -232,6 +261,23 @@ router.get('/info', (_, res: Response<Record<string, unknown>>) => {
 
 /** Retrieves the app's last sync time for groups and users. */
 router.get('/last-sync', (_, res: Response<LastSyncResponse>) => {
+  const partialGroup: Config['lastGroupsPartialSync'] = nconf.get('lastGroupsPartialSync');
+  const fullGroup: Config['lastGroupsFullSync'] = nconf.get('lastGroupsFullSync');
+  const partialUser: Config['lastUsersPartialSync'] = nconf.get('lastUsersPartialSync');
+  const fullUser: Config['lastUsersFullSync'] = nconf.get('lastUsersFullSync');
+
+  res.json({
+    success: true,
+    lastSync: {
+      partialGroup,
+      fullGroup,
+      partialUser,
+      fullUser,
+    },
+  });
+});
+
+router.get('/update', (_, res: Response<LastSyncResponse>) => {
   const partialGroup: Config['lastGroupsPartialSync'] = nconf.get('lastGroupsPartialSync');
   const fullGroup: Config['lastGroupsFullSync'] = nconf.get('lastGroupsFullSync');
   const partialUser: Config['lastUsersPartialSync'] = nconf.get('lastUsersPartialSync');
