@@ -13,12 +13,15 @@ type InfoResponseProps = {
   publicKey: Config['publicKey'];
 };
 
-type UpdateResponseProps = {
-  success: boolean;
-  message?: string;
+type AvailableUpdateResponse = {
   currentVersion?: string;
   newVersion?: string;
-  downloadUrl?: string;
+  updateUrl?: string;
+};
+
+export type CheckUpdateResponse = AvailableUpdateResponse & {
+  success: boolean;
+  message?: string;
 };
 
 const Layout = (props: LayoutProps): JSX.Element => {
@@ -27,15 +30,12 @@ const Layout = (props: LayoutProps): JSX.Element => {
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [checkUpdate, setCheckUpdate] = useState<boolean>(false);
   const [checkingUpdate, setCheckingUpdate] = useState<boolean>(false);
-  const [updateResult, setUpdateResult] = useState<
-    | {
-        currentVersion: string;
-        newVersion: string;
-        downloadUrl: string;
-      }
-    | null
-    | false
-  >(null);
+  const [updateResult, setUpdateResult] = useState<AvailableUpdateResponse | null | false>(null);
+  const [updateInProgress, setUpdateInProgress] = useState<boolean>(false);
+  const [updateStatus, setUpdateStatus] = useState<string>(
+    'Update in progress. Please hold on as this could take a few minutes.'
+  );
+  const [successfulUpdate, setSuccessfulUpdate] = useState<boolean>(false);
 
   /**
    * Check and display the app's ID and public key if set in local storage.
@@ -84,24 +84,23 @@ const Layout = (props: LayoutProps): JSX.Element => {
 
     fetch('http://localhost:6970/update')
       .then((res) => res.json())
-      .then((data: UpdateResponseProps) => {
-        // Perhaps already up to date?
-        if (data.success && data.message) {
-          toast.info(data.message);
+      .then((data: CheckUpdateResponse) => {
+        // Did it fail? :(
+        if (!data.success) {
           setCheckUpdate(false);
+          toast.error(data.message || 'Failed to check for an update.');
           return;
         }
 
-        if (data.currentVersion && data.newVersion && data.downloadUrl) {
-          setUpdateResult({
-            currentVersion: data.currentVersion,
-            newVersion: data.newVersion,
-            downloadUrl: data.downloadUrl,
-          });
-        } else {
-          setUpdateResult(false);
-          toast.error(data.message || 'Attempt to check for an update failed.');
+        // Perhaps already up to date?
+        if (data.message) {
+          setCheckUpdate(false);
+          toast.info(data.message);
+          return;
         }
+
+        const { currentVersion, newVersion, updateUrl } = data;
+        setUpdateResult({ currentVersion, newVersion, updateUrl });
       })
       .catch((error) => {
         setUpdateResult(false);
@@ -112,8 +111,41 @@ const Layout = (props: LayoutProps): JSX.Element => {
       });
   };
 
-  const downloadUpdate = (): void => {
-    //
+  const proceedWithUpdate = (): void => {
+    if (!updateResult) {
+      setCheckUpdate(true);
+      return;
+    }
+
+    setCheckUpdate(false);
+    setUpdateInProgress(true);
+
+    fetch('http://localhost:6970/update', {
+      method: 'post',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ updateUrl: updateResult.updateUrl }),
+    })
+      .then((res) => res.json())
+      .then((update: { success: boolean; message?: string }) => {
+        // Did the update succeed? :)
+        if (update.success) {
+          setUpdateStatus(
+            "Successfully updated the connector. If you are unable to see expected changes right away, you might need to clear your browser's cache for the connector."
+          );
+          setSuccessfulUpdate(true);
+          return;
+        }
+
+        setUpdateInProgress(false);
+        toast.error(update.message || 'Failed to complete the update. Please try manual update.');
+      })
+      .catch((error) => {
+        setUpdateInProgress(false);
+        toast.error(`Please try manual update. ${(error as Error).message}`);
+      });
   };
 
   useEffect(() => {
@@ -124,47 +156,58 @@ const Layout = (props: LayoutProps): JSX.Element => {
     <>
       <Dialog open={checkUpdate}>
         <DialogContent>
-          {!checkingUpdate && !updateResult && (
-            <div className='text-xl font-semibold text-red-600'>
-              Failed to check for updates. Please try again in a while.
-            </div>
-          )}
-          {checkingUpdate && <div className='text-xl font-semibold'>Checking for updates...</div>}
-          {updateResult && (
+          {updateResult ? (
             <>
-              <table className='table-auto'>
+              <table className='table-auto w-48 text-lg'>
                 <tbody>
                   <tr>
-                    <td>Current version</td>
+                    <td>Current version:</td>
                     <td>
                       <strong>{updateResult.currentVersion}</strong>
                     </td>
                   </tr>
                   <tr>
-                    <td>Available version</td>
+                    <td>Available version:</td>
                     <td>
                       <strong>{updateResult.newVersion}</strong>
                     </td>
                   </tr>
                 </tbody>
               </table>
-              <div className='mt-4 text-lg'>
-                Click PROCEED button to automatically download and install update. Alternatively, or if automatic update
-                fails, you can use the following link to manually download and install the new available version.
+              <div className='mt-4'>
+                Proceed to automatically download and install update. Alternatively, or if automatic update fails, you
+                can use the following link to manually download and install the new available version.
                 <br />
-                <a href={updateResult.downloadUrl}>Manually download the latest version</a>
+                <a href={updateResult.updateUrl} className='text-blue-700 hover:underline'>
+                  Click here to manually download the latest version
+                </a>
               </div>
-              <div className='mt-3 text-lg font-semibold'>
-                After you press the PROCEED button, you will not be able to use connector until the update is completed.
+              <div className='mt-3 font-semibold'>
+                After you press the PROCEED button, you will not be able to use the connector until the update is
+                complete.
               </div>
             </>
+          ) : (
+            <div className='text-xl font-semibold'>Checking for updates...</div>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={(): void => setCheckUpdate(false)}>Cancel</Button>
           {updateResult && (
-            <Button onClick={downloadUpdate} autoFocus>
+            <Button onClick={proceedWithUpdate} autoFocus>
               Proceed
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+      <Dialog open={updateInProgress}>
+        <DialogContent>
+          <div className='mt-3 font-semibold'>{updateStatus}</div>
+        </DialogContent>
+        <DialogActions>
+          {successfulUpdate && (
+            <Button onClick={(): void => {}} autoFocus>
+              Okay
             </Button>
           )}
         </DialogActions>

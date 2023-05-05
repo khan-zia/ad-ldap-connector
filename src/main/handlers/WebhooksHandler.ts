@@ -12,13 +12,15 @@ export const WEBHOOK = {
   FAILURE: 'failure',
 } as const;
 
-type SendPayloadResponse = {
+export type WebhookResponse<T extends Record<string, unknown>> = {
   status: (typeof WEBHOOK)[keyof typeof WEBHOOK];
   message?: string;
-  payload?: {
-    uploadUrl: string;
-  };
+  payload?: T;
 };
+
+type SendPayloadResponse = WebhookResponse<{
+  uploadUrl: string;
+}>;
 
 /**
  * Sends the specified payload to Meveto for syncing. If a file is uploaded to Meveto, it
@@ -244,11 +246,11 @@ export const sendPayload = async (
  * @param retries Number of times to try sending the payload again in case of none-2xx failure.
  * Defaults to 0 (no retries).
  */
-export const sendWebhook = async (
+export const sendWebhook = async <T extends Record<string, unknown>>(
   payload: Record<string, unknown>,
   sign = false,
   retries = 0
-): Promise<Record<string, unknown> | string> => {
+): Promise<WebhookResponse<T>> => {
   log.debug('Attempting to send a webhook call to Meveto. Payload attached.', payload);
 
   try {
@@ -259,11 +261,11 @@ export const sendWebhook = async (
 
       // If the response is a string, then it's an error.
       if (typeof signed === 'string') {
-        return signed;
+        throw new Error(signed);
       }
     }
 
-    const response: Record<string, unknown> = await got
+    const response: WebhookResponse<T> = await got
       .post(nconf.get('webhookUrl'), {
         json: sign ? signed : payload,
         retry: { limit: retries },
@@ -278,7 +280,7 @@ export const sendWebhook = async (
       error: (error as Error).message,
     });
 
-    return (error as Error).message || 'The webhook call could not be executed properly.';
+    throw new Error((error as Error).message || 'The webhook call could not be executed properly.');
   }
 };
 
