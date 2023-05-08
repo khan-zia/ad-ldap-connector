@@ -5,17 +5,13 @@
     <!-- and may or may not get replaced with a different app. -->
     <?define UpgradeCode = "{3de2814b-aab0-4aae-b668-9d4769fa2845}"?>
 
-    <!-- Define app's version. This needs to be changed accordingly before rolling out a production
-    update. -->
-    <?define Version = "1.0.0"?>
-
     <Package
         ProductCode="*"
         Scope="perMachine"
         UpgradeCode="$(var.UpgradeCode)"
         Name="!(loc.ProductName)"
         Manufacturer="!(loc.Company)"
-        Version="$(Version)"
+        Version="$(ProductVersion)"
         Language="!(loc.Language)"
     >
         <SummaryInformation Description="!(loc.Description)" Keywords="!(loc.Keywords)" />
