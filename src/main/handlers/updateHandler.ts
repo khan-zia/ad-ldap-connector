@@ -65,7 +65,35 @@ export const checkUpdatesIfAny = async (
 
     return null;
   } catch (error) {
-    log.error('Attempt to check for updates failed. An error message is attached in context if any.');
+    log.error('Attempt to check for updates failed. An error message is attached in context if any.', {
+      error: (error as Error).message,
+    });
+
+    // Re-throw the error for the consumers to catch.
+    throw new Error((error as Error).message);
+  }
+};
+
+export const installUpdateFromUrl = async (updateUrl: string): Promise<void> => {
+  log.debug(`Initiating update. Specified update URL: ${updateUrl}`);
+  log.debug(
+    'The node server will be reinstalled and further logs can not be caught. If there are no error logs after this, the update should be considered successful.'
+  );
+  log.flush();
+
+  try {
+    const result = await executePSScript('update.ps1', { updateUrl });
+
+    // We do not expect anything back from the update script. Any returned feedback should be treated as
+    // an exception thrown by the script (error).
+    if (result) {
+      const sanitized = sanitizePSResult(result);
+      if (sanitized !== '') throw new Error(sanitized);
+    }
+  } catch (error) {
+    log.error('Failed to update the connector.', {
+      error: (error as Error).message,
+    });
 
     // Re-throw the error for the consumers to catch.
     throw new Error((error as Error).message);

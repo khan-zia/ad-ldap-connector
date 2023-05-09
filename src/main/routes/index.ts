@@ -9,7 +9,7 @@ import { sync as syncHandler } from '../handlers/SyncHandler';
 import { isElevated } from '../utils';
 import { LastSyncResponse, SyncAction } from '../../renderer/pages/Home';
 import log from '../utils/logger';
-import { checkUpdatesIfAny, getCurrentVersion } from '../handlers/updateHandler';
+import { checkUpdatesIfAny, getCurrentVersion, installUpdateFromUrl } from '../handlers/updateHandler';
 import { CheckUpdateResponse } from '../../renderer/components/Layout';
 
 // Initialize the router.
@@ -264,18 +264,16 @@ const installUpdate: RequestHandler = async (
   res: Response<{ success: boolean; message?: string }>
 ) => {
   log.debug('Attempting to update the connector.');
+  const { updateUrl } = req.body;
 
   try {
-    // const update =
-
-    log.debug('...');
-    log.flush();
+    await installUpdateFromUrl(updateUrl);
 
     return res.json({
       success: true,
     });
   } catch (error) {
-    log.error('Failed to check for an update. An error message is included in the context.', {
+    log.error('The connector could not be updated.', {
       error: (error as Error).message,
     });
 
@@ -317,7 +315,12 @@ router.get('/last-sync', (_, res: Response<LastSyncResponse>) => {
 });
 
 router.get('/update', isAdmin, checkUpdate);
-router.post('/update', isAdmin, installUpdate);
+router.post(
+  '/update',
+  isAdmin,
+  [check('updateUrl').exists({ checkNull: true }).isString().withMessage('Specify an update URL.')],
+  installUpdate
+);
 
 router.post('/configure', isAdmin, configure);
 
