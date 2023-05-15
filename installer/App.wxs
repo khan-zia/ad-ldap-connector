@@ -72,10 +72,11 @@
 
         <InstallExecuteSequence>
             <Custom Action="MevetoConnectorProcess" Before="StartServices" />
-            <Custom Action="ConnectorStdOut" After="MevetoConnectorProcess" />
-            <Custom Action="ConnectorStdErr" After="MevetoConnectorProcess" />
+            <!-- <Custom Action="ConnectorStdOut" After="MevetoConnectorProcess" />
+            <Custom Action="ConnectorStdErr" After="MevetoConnectorProcess" /> -->
             <Custom Action="MevetoConnectorUI" Before="StartServices" />
-            <Custom Action="LaunchBrowser" After="InstallFinalize" />
+            <Custom Action="LaunchBrowser" After="InstallFinalize"
+                Condition="NOT Installed" />
         </InstallExecuteSequence>
     </Package>
 </Wix>

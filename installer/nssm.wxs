@@ -12,24 +12,6 @@
         />
 
         <CustomAction
-            Id="ConnectorStdOut"
-            Impersonate="no"
-            Execute="deferred"
-            FileRef="NssmBinFile"
-            ExeCommand='set Meveto AppStdout "[INSTALLFOLDER]logs\stdout.log"'
-            Return="asyncWait"
-        />
-
-        <CustomAction
-            Id="ConnectorStdErr"
-            Impersonate="no"
-            Execute="deferred"
-            FileRef="NssmBinFile"
-            ExeCommand='set Meveto AppStderr "[INSTALLFOLDER]logs\stderr.log"'
-            Return="asyncWait"
-        />
-
-        <CustomAction
             Id="MevetoConnectorUI"
             Impersonate="no"
             Execute="deferred"
@@ -38,6 +20,23 @@
             Return="asyncWait"
         />
 
+        <!-- <CustomAction
+            Id="ConnectorStdOut"
+            Impersonate="no"
+            Execute="deferred"
+            FileRef="NssmBinFile"
+            ExeCommand='set Meveto AppStdout "[INSTALLFOLDER]logs\stdout.log"'
+            Return="asyncWait"
+        /> -->
+
+        <!-- <CustomAction
+            Id="ConnectorStdErr"
+            Impersonate="no"
+            Execute="deferred"
+            FileRef="NssmBinFile"
+            ExeCommand='set Meveto AppStderr "[INSTALLFOLDER]logs\stderr.log"'
+            Return="asyncWait"
+        /> -->
         <Component Id="NssmServicesControl" Directory="INSTALLFOLDER"
             Guid="8eb5e20b-b396-4728-a02c-f2d9903ad789">
             <ServiceControl Name="Meveto" Start="install" Stop="both" Remove="uninstall" />
