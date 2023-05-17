@@ -35,7 +35,6 @@ const Layout = (props: LayoutProps): JSX.Element => {
   const [updateStatus, setUpdateStatus] = useState<string>(
     'Update in progress. Please hold on as this could take a few minutes.'
   );
-  const [successfulUpdate, setSuccessfulUpdate] = useState<boolean>(false);
 
   /**
    * Check and display the app's ID and public key if set in local storage.
@@ -131,20 +130,16 @@ const Layout = (props: LayoutProps): JSX.Element => {
       .then((res) => res.json())
       .then((update: { success: boolean; message?: string }) => {
         // Did the update succeed? :)
-        if (update.success) {
-          setUpdateStatus(
-            "Successfully updated the connector. If you are unable to see expected changes right away, you might need to clear your browser's cache for the connector."
-          );
-          setSuccessfulUpdate(true);
-          return;
+        if (!update.success) {
+          setUpdateInProgress(false);
+          toast.error(update.message || 'Failed to complete the update. Please try manual update.');
         }
-
-        setUpdateInProgress(false);
-        toast.error(update.message || 'Failed to complete the update. Please try manual update.');
       })
-      .catch((error) => {
-        setUpdateInProgress(false);
-        toast.error(`Please try manual update. ${(error as Error).message}`);
+      .catch(() => {
+        // This request was most likely terminated because the app running as service was stopped for re-install (update)
+        setUpdateStatus(
+          'Update has been successfully downloaded and is being installed in the background. You can close this window now as it will no longer be responsive. Upon successful completion of the update, the Connector will relaunch in a new tab.'
+        );
       });
   };
 
@@ -204,13 +199,6 @@ const Layout = (props: LayoutProps): JSX.Element => {
         <DialogContent>
           <div className='mt-3 font-semibold'>{updateStatus}</div>
         </DialogContent>
-        <DialogActions>
-          {successfulUpdate && (
-            <Button onClick={(): void => {}} autoFocus>
-              Okay
-            </Button>
-          )}
-        </DialogActions>
       </Dialog>
       <div className='w-full px-8 flex items-center justify-between h-20 shadow-md'>
         <img src='../assets/logo.png' className='w-32 h-12' alt='Meveto Logo' />

@@ -44,20 +44,22 @@ $RandomNum.GetBytes($AESKey)
 Set-Content -Path $Target -Value $EncryptedPrivateKeyBytes -Encoding Byte
 
 # Make the files hidden and read only by default.
-$PKey = Get-Item $Target -Force
 
-$PKey.Attributes = $PKey.Attributes -bor [System.IO.FileAttributes]::Hidden
-$PKey.Attributes = $PKey.Attributes -bor [System.IO.FileAttributes]::ReadOnly
+# $PKey = Get-Item $Target -Force
+
+# $PKey.Attributes = $PKey.Attributes -bor [System.IO.FileAttributes]::Hidden
+# $PKey.Attributes = $PKey.Attributes -bor [System.IO.FileAttributes]::ReadOnly
 
 # Disable permission inheritance for the files. Remove all existing permissions and then assign only the current user to
 # have "Read" permission.
-$PKeyACL = Get-Acl $Target
 
-$PKeyACL.SetAccessRuleProtection($True, $False)
-$PKeyACL.SetOwner([System.Security.Principal.NTAccount] $env:USERNAME)
-$ReadRule = New-Object System.Security.AccessControl.FileSystemAccessRule($env:USERNAME, 'Read', 'Allow')
-$LocalSystemRule = New-Object System.Security.AccessControl.FileSystemAccessRule("NT AUTHORITY\SYSTEM", "Read", "Allow")
-$PKeyACL.AddAccessRule($ReadRule)
-$PKeyACL.AddAccessRule($LocalSystemRule)
+# $PKeyACL = Get-Acl $Target
 
-Set-Acl $Target -AclObject $PKeyACL
+# $PKeyACL.SetAccessRuleProtection($True, $False)
+# $PKeyACL.SetOwner([System.Security.Principal.NTAccount] $env:USERNAME)
+# $ReadRule = New-Object System.Security.AccessControl.FileSystemAccessRule($env:USERNAME, 'Read', 'Allow')
+# $LocalSystemRule = New-Object System.Security.AccessControl.FileSystemAccessRule("NT AUTHORITY\SYSTEM", "Read", "Allow")
+# $PKeyACL.AddAccessRule($ReadRule)
+# $PKeyACL.AddAccessRule($LocalSystemRule)
+
+# Set-Acl $Target -AclObject $PKeyACL

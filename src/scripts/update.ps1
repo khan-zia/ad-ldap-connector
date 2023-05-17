@@ -48,12 +48,7 @@ Try {
   Start-Process "msiexec.exe" -ArgumentList $msiArgs -Wait
 
   $connectorService = Get-Service "Meveto"
-  if ($null -ne $connectorService) {
 
-    Restart-Service "Meveto"
-  }
-
-  $connectorService = Get-Service "Meveto"
   if ($null -ne $connectorService) {
     if ($connectorService.Status -eq "Running") {
         Stop-Service "Meveto"
@@ -62,7 +57,7 @@ Try {
     }
 
     Copy-Item -Path "$backupLocation\default.json" -Destination "$env:ProgramFiles\Meveto\config\default.json"
-    Remove-Item $backupLocation -Recurse
+    Remove-Item $backupLocation -Recurse -Force
     Start-Service "Meveto"
   }
 }

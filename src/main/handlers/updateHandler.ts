@@ -76,13 +76,9 @@ export const checkUpdatesIfAny = async (
 
 export const installUpdateFromUrl = async (updateUrl: string): Promise<void> => {
   log.debug(`Initiating update. Specified update URL: ${updateUrl}`);
-  log.debug(
-    'The node server will be reinstalled and further logs can not be caught. If there are no error logs after this, the update should be considered successful.'
-  );
-  log.flush();
 
   try {
-    const result = await executePSScript('update.ps1', { updateUrl });
+    const result = await executePSScript('update.ps1', { updateUrl }, false, true);
 
     // We do not expect anything back from the update script. Any returned feedback should be treated as
     // an exception thrown by the script (error).
@@ -90,6 +86,11 @@ export const installUpdateFromUrl = async (updateUrl: string): Promise<void> => 
       const sanitized = sanitizePSResult(result);
       if (sanitized !== '') throw new Error(sanitized);
     }
+
+    log.debug(
+      'The node server will be reinstalled and further logs can not be caught. If there are no error logs after this, the update should be considered successful.'
+    );
+    log.flush();
   } catch (error) {
     log.error('Failed to update the connector.', {
       error: (error as Error).message,

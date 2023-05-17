@@ -3,7 +3,7 @@
   "port": "6970",
   "appID": null,
   "publicKey": null,
-  "webhookUrl": "https://staging.meveto.com/api/extensions/ldap-connector/webhook",
+  "webhookUrl": "https://stoplight.io/mocks/meveto-inc/connector/179170341/api/extensions/ldap-connector/webhook",
   "conString": null,
   "baseDN": null,
   "ldapUsername": null,

@@ -64,11 +64,14 @@ export const isElevated = (): ProcessElevated => {
  * @param params An object of key value pairs. Each value will be passed as a parameter to the script. If a key is set to Null,
  *               it will be omitted.
  * @param encode Whether to base64 encode values of the parameters or not. Defaults to false.
+ * @param detach Whether to run the script on a completely detached child process so that it continues running even if the main
+ *               node process exits. Defaults to false.
  */
 export const executePSScript = (
   name: string,
   params?: Record<string, string | null>,
-  encode = false
+  encode = false,
+  detach = false
 ): Promise<string | null> => {
   let output: string | null = null;
   let errorOutput: string | null = null;
@@ -89,15 +92,14 @@ export const executePSScript = (
       });
     }
 
-    // Execute the script.
-    const ps = spawn('powershell.exe', [
-      '-ExecutionPolicy',
-      'Bypass',
-      '-NonInteractive',
-      '-File',
-      PSScript,
-      ...passableParams,
-    ]);
+    let cmd = 'powershell.exe';
+    const scriptArgs = ['-ExecutionPolicy', 'Bypass', '-NonInteractive', '-File', PSScript, ...passableParams];
+
+    if (detach) {
+      cmd = path.join(__dirname(import.meta.url), `../../scripts/psrunner.cmd`);
+    }
+
+    const ps = spawn(cmd, scriptArgs);
 
     // Cath errors if any.
     ps.on('error', (error) => {
