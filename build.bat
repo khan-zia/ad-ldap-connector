@@ -56,7 +56,6 @@ set NSSM_ZIP=!EXTRACTION_FOLDER!\nssm-!NSSM_VERSION!.zip
 set NSSM_EXTRACTED_AS=!EXTRACTION_FOLDER!\nssm-!NSSM_VERSION!
 
 if not exist "%NSSM_EXE%" (
-    @REM if not exist "%EXTRACTION_FOLDER%" mkdir -p "%EXTRACTION_FOLDER%"
     curl -L "%NSSM_RELEASE_URL%" -o "%NSSM_ZIP%"
     PowerShell -Command "Expand-Archive -LiteralPath '%NSSM_ZIP%' -DestinationPath '%EXTRACTION_FOLDER%'"
     copy !NSSM_EXTRACTED_AS!\win32\nssm.exe .\build\bin\

@@ -92,14 +92,16 @@ export const executePSScript = (
       });
     }
 
-    let cmd = 'powershell.exe';
+    let ps;
     const scriptArgs = ['-ExecutionPolicy', 'Bypass', '-NonInteractive', '-File', PSScript, ...passableParams];
 
     if (detach) {
-      cmd = path.join(__dirname(import.meta.url), `../../scripts/psrunner.cmd`);
+      ps = spawn('psrunner.cmd', scriptArgs, {
+        cwd: path.join(__dirname(import.meta.url), `../../scripts`),
+      });
+    } else {
+      ps = spawn('powershell.exe', scriptArgs);
     }
-
-    const ps = spawn(cmd, scriptArgs);
 
     // Cath errors if any.
     ps.on('error', (error) => {

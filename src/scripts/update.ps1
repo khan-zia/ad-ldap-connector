@@ -16,17 +16,17 @@ Catch {
     Exit 1
 }
 
-Try {
-  $connector = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -match "Meveto AD/LDAP Connector" }
+# Try {
+#   $connector = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -match "Meveto AD/LDAP Connector" }
   
-  if ($null -ne $connector) {
-    $connector.Uninstall()
-  }
-}
-Catch {
-    Write-Error $_.Exception.Message
-    Exit 1
-}
+#   if ($null -ne $connector) {
+#     $connector.Uninstall()
+#   }
+# }
+# Catch {
+#     Write-Error $_.Exception.Message
+#     Exit 1
+# }
 
 Try {
   $msiDownloadLocation = [io.path]::combine($env:TEMP, 'meveto-' + $(Get-Date -f yyyyMMdd-HHmmss) + '.msi')
